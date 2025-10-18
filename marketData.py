@@ -1,16 +1,19 @@
 from calendar import c
 from dotenv import load_dotenv
 import os
+import certifi
 
 load_dotenv()
 
-from datetime import datetime
 from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame
+from datetime import datetime, timedelta, timezone
+import pandas as pd
 import yfinance as yf
 import time
 import traceback
+import requests
 
 API_KEY = os.getenv("ALPACA_API_KEY")
 API_SECRET = os.getenv("ALPACA_API_SECRET")
@@ -18,6 +21,30 @@ API_SECRET = os.getenv("ALPACA_API_SECRET")
 client = StockHistoricalDataClient(API_KEY, API_SECRET)
 
 FMP_KEY = os.getenv("FMP_API_KEY")
+ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY")
+
+def update_stock_data(symbol, stock_info, filename="stock_data.csv"):
+    # Create DataFrame from the new info
+    new_data = pd.DataFrame([{ "Symbol": symbol, **stock_info }])
+
+    # If the file doesn't exist, create it
+    if not os.path.exists(filename):
+        new_data.to_csv(filename, index=False)
+        print(f"Created {filename} with {symbol}")
+        return
+
+    # Otherwise, read existing data
+    df = pd.read_csv(filename)
+
+    # Check if the symbol exists already
+    if symbol in df["Symbol"].values:
+        df.loc[df["Symbol"] == symbol, list(stock_info.keys())] = list(stock_info.values())
+        print(f"Updated data for {symbol}")
+    else:
+        df = pd.concat([df, new_data], ignore_index=True)
+        print(f"Added new data for {symbol}")
+
+    df.to_csv(filename, index=False)
 
 def score_stock(current_revenue_growth, past_revenue_growth, pe_ratio, dividend_yield, debt_to_equity=None):
     """
@@ -59,72 +86,108 @@ def score_stock(current_revenue_growth, past_revenue_growth, pe_ratio, dividend_
     }
 
 
-def fetch_with_alpaca(symbol, start=None, end=None, timeframe=TimeFrame.Day):
+def fetch_with_alpaca(symbol, timeframe=TimeFrame.Day):
     if client is None:
         raise RuntimeError("Alpaca client not configured (missing ALPACA_API_KEY/SECRET).")
-    start = start or datetime(2022, 9, 1)
-    end = end or datetime(2022, 9, 7)
+
+    now = datetime.now(timezone.utc)
+    start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    end = now + timedelta(minutes=1)
+
     req = StockBarsRequest(
         symbol_or_symbols=[symbol],
         timeframe=timeframe,
         start=start,
         end=end,
+        feed="iex", 
+        limit=1
     )
+
     bars = client.get_stock_bars(req)
-    # client returns an object with .df in many versions
+
     try:
-        return ("alpaca", bars.df)
-    except Exception:
-        # fallback: try to convert iterable bars to DataFrame-like print
-        rows = []
-        for b in bars:
-            rows.append((b.t, b.o, b.h, b.l, b.c, getattr(b, "v", None)))
-        return ("alpaca-iter", rows)
+        df = bars.df
+        if not df.empty:
+            latest_bar = df.iloc[-1]
+            return {
+                "symbol": symbol,
+                "timestamp": latest_bar.name[1] if isinstance(latest_bar.name, tuple) else latest_bar.name,
+                "open": latest_bar.open,
+                "high": latest_bar.high,
+                "low": latest_bar.low,
+                "close": latest_bar.close,
+                "volume": latest_bar.volume,
+            }
+        else:
+            raise RuntimeError("No data returned for today.")
+    except AttributeError:
+        rows = list(bars)
+        if not rows:
+            raise RuntimeError("No data returned for today.")
+        b = rows[-1]
+        return {
+            "symbol": symbol,
+            "timestamp": b.t,
+            "open": b.o,
+            "high": b.h,
+            "low": b.l,
+            "close": b.c,
+            "volume": getattr(b, "v", None),
+        }
 
 
-def fetch_with_yfinance(symbol, retries=3, base_wait=2):
-    import requests
-    from requests.adapters import HTTPAdapter
-    from urllib3.util.retry import Retry
 
-    # build a session with retry for HTTP 429/5xx
-    sess = requests.Session()
-    retry_strategy = Retry(
-        total=retries,
-        status_forcelist=[429, 500, 502, 503, 504],
-        backoff_factor=base_wait,
-        allowed_methods=["GET", "POST"]
-    )
-    sess.mount("https://", HTTPAdapter(max_retries=retry_strategy))
+def fetch_with_alpha_vintage(symbol):
+    # Primary and backup keys
+    key_1 = os.getenv("ALPHA_VANTAGE_API_KEY_1")
+    key_2 = os.getenv("ALPHA_VANTAGE_API_KEY_2")
 
-    attempt = 0
-    while attempt < retries:
-        try:
-            # use yf.download which is often more robust than Ticker().history()
-            df = yf.download(
-                tickers=symbol,
-                period="1mo",
-                interval="1d",
-                progress=False,
-                threads=False,
-                session=sess
-            )
-            if df is None or df.empty:
-                raise RuntimeError("No data returned from yfinance.download()")
-            return ("yfinance", df)
-        except Exception as e:
-            msg = str(e)
-            # handle rate-limit and retryable parse errors
-            if "Too Many Requests" in msg or "429" in msg or isinstance(e, ValueError):
-                wait = base_wait * (2 ** attempt)
-                print(f"yfinance retryable error: {msg}. retrying in {wait}s (attempt {attempt+1}/{retries})")
-                time.sleep(wait)
-                attempt += 1
-                continue
-            # final failure
-            raise
+    if not key_1 and not key_2:
+        raise RuntimeError("No Alpha Vantage API key provided.")
 
-def fetch_with_FMP(symbol, api_key=None):
+    def try_fetch(key):
+        url = f"https://www.alphavantage.co/query?function=OVERVIEW&symbol={symbol}&apikey={key}"
+        resp = requests.get(url, timeout=10, verify=certifi.where())
+        resp.raise_for_status()
+        data = resp.json()
+        if not data:
+            raise RuntimeError("Alpha Vantage returned empty response")
+        if "Note" in data or "Information" in data:
+            # Alpha Vantage returns 'Note' when rate limit is exceeded
+            raise RuntimeError(data.get("Note") or data.get("Information"))
+        return data
+
+    # Try primary key first, then backup
+    try:
+        data = try_fetch(key_1)
+    except Exception as e1:
+        if key_2:
+            print("Primary API key failed, trying backup...")
+            try:
+                data = try_fetch(key_2)
+            except Exception as e2:
+                raise RuntimeError(f"Both Alpha Vantage API keys failed: {e1} / {e2}") from e2
+        else:
+            raise RuntimeError(f"Alpha Vantage request failed with primary key: {e1}") from e1
+
+    stock_info = {
+        "sector": data.get("Sector"),
+        "market_cap": float(data.get("MarketCapitalization", 0)),
+        "pe_ratio": float(data.get("PERatio", 0)),
+        "forward_pe": float(data.get("ForwardPE", 0)),
+        "peg_ratio": float(data.get("PEGRatio", 0)),
+        "return_on_equity": float(data.get("ReturnOnEquityTTM", 0)),
+        "profit_margin": float(data.get("ProfitMargin", 0)),
+        "earnings_growth_yoy": float(data.get("QuarterlyEarningsGrowthYOY", 0)),
+        "dividend_yield": float(data.get("DividendYield", 0)),
+        "beta": float(data.get("Beta", 0)),
+        "analyst_target_price": float(data.get("AnalystTargetPrice", 0)),
+    }
+
+    return ("Stock Info", stock_info)
+
+
+def fetch_with_FMP(symbol):
     def average_revenue_growth(data, years=5):
         """
         Compute the average revenue growth over the last `years` fiscal years.
@@ -145,7 +208,7 @@ def fetch_with_FMP(symbol, api_key=None):
     import requests
     import certifi
 
-    key = api_key or os.getenv("FMP_API_KEY")
+    key = os.getenv("FMP_API_KEY")
     if not key:
         raise RuntimeError("FMP API key not provided. Set FMP_API_KEY env var or pass api_key.")
 
@@ -189,25 +252,20 @@ def fetch_with_FMP(symbol, api_key=None):
 
 
 if __name__ == "__main__":
-    symbol = os.getenv("SYMBOL", "NVDA")
-    # First try yfinance (less setup). If it fails due to rate limit, fallback to Alpaca if configured.
-    try:
-        source, data = fetch_with_FMP(symbol, api_key=FMP_KEY)
-        print(data)
-    except Exception as e:
-        print("FMP failed:", str(e))
-        # if client:
-        #     try:
-        #         src, df = fetch_with_alpaca(symbol)
-        #         print(f"Fetched from {src}.")
-        #         # df may be DataFrame or list of rows
-        #         if hasattr(df, "tail"):
-        #             print(df.tail(10).to_string())
-        #         else:
-        #             for r in df[:10]:
-        #                 print(r)
-        #     except Exception as ae:
-        #         print("Alpaca fallback failed:", str(ae))
-        #         traceback.print_exc()
-        # else:
-        #     print("No Alpaca credentials configured. Set ALPACA_API_KEY and ALPACA_API_SECRET to use Alpaca as a fallback.")
+    sp500_df = pd.read_csv("S&P-500.csv")
+    tickers = sp500_df["Symbol"].tolist()
+    print(len(tickers), tickers[:5])
+
+    for stocks in tickers[:100]:
+        symbol = os.getenv("SYMBOL", stocks)
+
+        try:
+            source, data = fetch_with_alpha_vintage(symbol)
+            update_stock_data(symbol, data)
+            print(data)
+        except Exception as e:
+            print("Failed:", str(e))
+            break
+
+        time.sleep(12)
+      
