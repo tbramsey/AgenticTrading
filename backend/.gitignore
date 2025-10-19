@@ -1,0 +1,34 @@
+# Minimal .gitignore for the Python backend
+
+## Byte-compiled / cache
+__pycache__/
+*.py[cod]
+
+## Virtual environments
+venv/
+env/
+ENV/
+
+## Environment / secrets
+.env
+.env.*
+
+## Test / coverage
+.pytest_cache/
+.coverage
+
+## Logs and local dbs
+*.log
+logs/
+*.sqlite3
+*.db
+
+## IDEs and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+## Jupyter
+.ipynb_checkpoints
+
