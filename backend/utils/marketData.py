@@ -1,4 +1,3 @@
-from calendar import c
 from dotenv import load_dotenv
 import os
 import certifi
@@ -20,7 +19,13 @@ API_SECRET = os.getenv("ALPACA_API_SECRET")
 
 client = StockHistoricalDataClient(API_KEY, API_SECRET)
 
-FMP_KEY = os.getenv("FMP_API_KEY")
+# Compute data directory relative to this file: backend/data
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+SANDP_FILE = os.path.join(DATA_DIR, "S&P-500.csv")
+STOCK_DATA_FILE = os.path.join(DATA_DIR, "stock_data.csv")
+
+# FMP_KEY = os.getenv("FMP_API_KEY")
 ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY")
 
 def safe_float(value, default=0.0):
@@ -41,9 +46,15 @@ def safe_int(value, default=0):
         return default
 
 
-def update_stock_data(symbol, stock_info, filename="stock_data.csv"):
+def update_stock_data(symbol, stock_info, filename=None):
     # Create DataFrame from the new info
     new_data = pd.DataFrame([{ "symbol": symbol, **stock_info }])
+
+    if filename is None:
+        filename = STOCK_DATA_FILE
+
+    # Ensure data directory exists
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
 
     # If the file doesn't exist, create it
     if not os.path.exists(filename):
@@ -307,12 +318,18 @@ def fetch_with_FMP(symbol):
 
 
 if __name__ == "__main__":
-    sp500_df = pd.read_csv("S&P-500.csv")
+    # Read S&P-500 list from backend/data
+    if not os.path.exists(SANDP_FILE):
+        raise FileNotFoundError(f"S&P-500 file not found at {SANDP_FILE}")
+    sp500_df = pd.read_csv(SANDP_FILE)
     tickers = sp500_df["Symbol"].tolist()
     print(len(tickers), tickers[:5])
-
-    stock_df = pd.read_csv("stock_data.csv")
-    data = stock_df["symbol"].tolist()
+    # Load existing stock_data if present; otherwise start empty
+    if os.path.exists(STOCK_DATA_FILE):
+        stock_df = pd.read_csv(STOCK_DATA_FILE)
+        data = stock_df["symbol"].tolist()
+    else:
+        data = []
 
     for stocks in tickers[len(data)+3:]:
         symbol = os.getenv("SYMBOL", stocks)

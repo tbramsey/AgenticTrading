@@ -9,8 +9,8 @@ from alpaca.trading.requests import GetOrdersRequest
 load_dotenv()
 
 # Initialize Alpaca client
-API_KEY = os.getenv('APCA_API_KEY_ID')
-API_SECRET = os.getenv('APCA_API_SECRET_KEY')
+API_KEY = os.getenv('ALPACA_API_KEY')
+API_SECRET = os.getenv('ALPACA_API_SECRET')
 PAPER = True  # Keep it paper trading for now
 
 if not API_KEY or not API_SECRET:

@@ -1,9 +1,10 @@
 flask
+
 alpaca-py
 python-dotenv
+
 langgraph
 langchain
 langchain-ollama
-openai
 
 yfinance
