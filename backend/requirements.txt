@@ -5,3 +5,5 @@ langgraph
 langchain
 langchain-ollama
 openai
+
+yfinance
