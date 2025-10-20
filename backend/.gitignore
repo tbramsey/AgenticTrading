@@ -1,0 +1,62 @@
+# Minimal .gitignore for the Python backend
+
+## Byte-compiled / cache
+__pycache__/
+*.py[cod]
+
+## Virtual environments
+venv/
+env/
+ENV/
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+.env
+venv/
+.venv/
+
+# Node / React / Vite
+node_modules/
+dist/
+build/
+.cache/
+*.log
+
+# VS Code / JetBrains
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Ignore stock and S&P 500 data files
+stock_data.csv
+S&P-500.csv
+## Environment / secrets
+.env
+.env.*
+
+## Test / coverage
+.pytest_cache/
+.coverage
+
+## Logs and local dbs
+*.log
+logs/
+*.sqlite3
+*.db
+
+## IDEs and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+## Jupyter
+.ipynb_checkpoints
+
