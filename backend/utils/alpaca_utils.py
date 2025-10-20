@@ -24,6 +24,7 @@ def get_account_info():
     """Fetch basic account information."""
     try:
         account = trading_client.get_account()
+        print(account)
         return {
             "id": account.id,
             "status": account.status,
