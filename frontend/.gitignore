@@ -1,7 +1,29 @@
-.DS_Store
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
 .env
-/node_modules/
+venv/
+.venv/
 
-# React Router
-/.react-router/
-/build/
+# Node / React / Vite
+node_modules/
+dist/
+build/
+.cache/
+*.log
+
+# VS Code / JetBrains
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Ignore stock and S&P 500 data files
+stock_data.csv
+S&P-500.csv
