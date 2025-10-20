@@ -23,9 +23,27 @@ client = StockHistoricalDataClient(API_KEY, API_SECRET)
 FMP_KEY = os.getenv("FMP_API_KEY")
 ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY")
 
+def safe_float(value, default=0.0):
+    try:
+        if value in (None, "None", "-", ""):
+            return default
+        return float(value)
+    except (ValueError, TypeError):
+        return default
+
+
+def safe_int(value, default=0):
+    try:
+        if value in (None, "None", "-", ""):
+            return default
+        return int(float(value))
+    except (ValueError, TypeError):
+        return default
+
+
 def update_stock_data(symbol, stock_info, filename="stock_data.csv"):
     # Create DataFrame from the new info
-    new_data = pd.DataFrame([{ "Symbol": symbol, **stock_info }])
+    new_data = pd.DataFrame([{ "symbol": symbol, **stock_info }])
 
     # If the file doesn't exist, create it
     if not os.path.exists(filename):
@@ -37,8 +55,8 @@ def update_stock_data(symbol, stock_info, filename="stock_data.csv"):
     df = pd.read_csv(filename)
 
     # Check if the symbol exists already
-    if symbol in df["Symbol"].values:
-        df.loc[df["Symbol"] == symbol, list(stock_info.keys())] = list(stock_info.values())
+    if symbol in df["symbol"].values:
+        df.loc[df["symbol"] == symbol, list(stock_info.keys())] = list(stock_info.values())
         print(f"Updated data for {symbol}")
     else:
         df = pd.concat([df, new_data], ignore_index=True)
@@ -139,10 +157,10 @@ def fetch_with_alpaca(symbol, timeframe=TimeFrame.Day):
 
 def fetch_with_alpha_vintage(symbol):
     # Primary and backup keys
-    key_1 = os.getenv("ALPHA_VANTAGE_API_KEY_1")
-    key_2 = os.getenv("ALPHA_VANTAGE_API_KEY_2")
+    key_1 = os.getenv("ALPHA_VANTAGE_API_KEY")
 
-    if not key_1 and not key_2:
+
+    if not key_1:
         raise RuntimeError("No Alpha Vantage API key provided.")
 
     def try_fetch(key):
@@ -161,27 +179,64 @@ def fetch_with_alpha_vintage(symbol):
     try:
         data = try_fetch(key_1)
     except Exception as e1:
-        if key_2:
-            print("Primary API key failed, trying backup...")
-            try:
-                data = try_fetch(key_2)
-            except Exception as e2:
-                raise RuntimeError(f"Both Alpha Vantage API keys failed: {e1} / {e2}") from e2
-        else:
-            raise RuntimeError(f"Alpha Vantage request failed with primary key: {e1}") from e1
+        raise RuntimeError(f"Alpha Vantage API keys failed: {e1}")
 
     stock_info = {
+        "symbol": data.get("Symbol"),
+        "asset_type": data.get("AssetType"),
+        "name": data.get("Name"),
+        "description": data.get("Description"),
+        "cik": data.get("CIK"),
+        "exchange": data.get("Exchange"),
+        "currency": data.get("Currency"),
+        "country": data.get("Country"),
         "sector": data.get("Sector"),
-        "market_cap": float(data.get("MarketCapitalization", 0)),
-        "pe_ratio": float(data.get("PERatio", 0)),
-        "forward_pe": float(data.get("ForwardPE", 0)),
-        "peg_ratio": float(data.get("PEGRatio", 0)),
-        "return_on_equity": float(data.get("ReturnOnEquityTTM", 0)),
-        "profit_margin": float(data.get("ProfitMargin", 0)),
-        "earnings_growth_yoy": float(data.get("QuarterlyEarningsGrowthYOY", 0)),
-        "dividend_yield": float(data.get("DividendYield", 0)),
-        "beta": float(data.get("Beta", 0)),
-        "analyst_target_price": float(data.get("AnalystTargetPrice", 0)),
+        "industry": data.get("Industry"),
+        "address": data.get("Address"),
+        "official_site": data.get("OfficialSite"),
+        "fiscal_year_end": data.get("FiscalYearEnd"),
+        "latest_quarter": data.get("LatestQuarter"),
+        "market_capitalization": safe_float(data.get("MarketCapitalization")),
+        "ebitda": safe_float(data.get("EBITDA")),
+        "pe_ratio": safe_float(data.get("PERatio")),
+        "peg_ratio": safe_float(data.get("PEGRatio")),
+        "book_value": safe_float(data.get("BookValue")),
+        "dividend_per_share": safe_float(data.get("DividendPerShare")),
+        "dividend_yield": safe_float(data.get("DividendYield")),
+        "eps": safe_float(data.get("EPS")),
+        "revenue_per_share_ttm": safe_float(data.get("RevenuePerShareTTM")),
+        "profit_margin": safe_float(data.get("ProfitMargin")),
+        "operating_margin_ttm": safe_float(data.get("OperatingMarginTTM")),
+        "return_on_assets_ttm": safe_float(data.get("ReturnOnAssetsTTM")),
+        "return_on_equity_ttm": safe_float(data.get("ReturnOnEquityTTM")),
+        "revenue_ttm": safe_float(data.get("RevenueTTM")),
+        "gross_profit_ttm": safe_float(data.get("GrossProfitTTM")),
+        "diluted_eps_ttm": safe_float(data.get("DilutedEPSTTM")),
+        "quarterly_earnings_growth_yoy": safe_float(data.get("QuarterlyEarningsGrowthYOY")),
+        "quarterly_revenue_growth_yoy": safe_float(data.get("QuarterlyRevenueGrowthYOY")),
+        "analyst_target_price": safe_float(data.get("AnalystTargetPrice")),
+        "analyst_rating_strong_buy": safe_int(data.get("AnalystRatingStrongBuy")),
+        "analyst_rating_buy": safe_int(data.get("AnalystRatingBuy")),
+        "analyst_rating_hold": safe_int(data.get("AnalystRatingHold")),
+        "analyst_rating_sell": safe_int(data.get("AnalystRatingSell")),
+        "analyst_rating_strong_sell": safe_int(data.get("AnalystRatingStrongSell")),
+        "trailing_pe": safe_float(data.get("TrailingPE")),
+        "forward_pe": safe_float(data.get("ForwardPE")),
+        "price_to_sales_ratio_ttm": safe_float(data.get("PriceToSalesRatioTTM")),
+        "price_to_book_ratio": safe_float(data.get("PriceToBookRatio")),
+        "ev_to_revenue": safe_float(data.get("EVToRevenue")),
+        "ev_to_ebitda": safe_float(data.get("EVToEBITDA")),
+        "beta": safe_float(data.get("Beta")),
+        "fifty_two_week_high": safe_float(data.get("52WeekHigh")),
+        "fifty_two_week_low": safe_float(data.get("52WeekLow")),
+        "fifty_day_moving_average": safe_float(data.get("50DayMovingAverage")),
+        "two_hundred_day_moving_average": safe_float(data.get("200DayMovingAverage")),
+        "shares_outstanding": safe_int(data.get("SharesOutstanding")),
+        "shares_float": safe_int(data.get("SharesFloat")),
+        "percent_insiders": safe_float(data.get("PercentInsiders")),
+        "percent_institutions": safe_float(data.get("PercentInstitutions")),
+        "dividend_date": data.get("DividendDate"),
+        "ex_dividend_date": data.get("ExDividendDate")
     }
 
     return ("Stock Info", stock_info)
@@ -256,7 +311,10 @@ if __name__ == "__main__":
     tickers = sp500_df["Symbol"].tolist()
     print(len(tickers), tickers[:5])
 
-    for stocks in tickers[:100]:
+    stock_df = pd.read_csv("stock_data.csv")
+    data = stock_df["symbol"].tolist()
+
+    for stocks in tickers[len(data)+3:]:
         symbol = os.getenv("SYMBOL", stocks)
 
         try:
@@ -267,5 +325,5 @@ if __name__ == "__main__":
             print("Failed:", str(e))
             break
 
-        time.sleep(12)
+        time.sleep(1)
       

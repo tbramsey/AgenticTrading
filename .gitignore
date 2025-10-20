@@ -23,3 +23,7 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+
+# Ignore stock and S&P 500 data files
+stock_data.csv
+S&P-500.csv
