@@ -1,12 +1,7 @@
 import React from "react";
-import {
-  Treemap,
-  Tooltip,
-  ResponsiveContainer,
-  Cell
-} from "recharts";
+import { Treemap, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
-const PortfolioTreemap = ({ data }) => {
+const PortfolioTreemap = ({ data, showChart = false }) => {
   const COLORS = [
     "#0088FE", "#00C49F", "#FFBB28", "#FF8042",
     "#845EC2", "#D65DB1", "#FF6F91", "#FFC75F",
@@ -17,53 +12,59 @@ const PortfolioTreemap = ({ data }) => {
     return <div style={{ padding: 16 }}>No portfolio data available</div>;
   }
 
-  // Normalize weights if they don’t sum to 100
-  const total = data.reduce((acc, d) => acc + (Number(d.weight) || 0), 0);
+  // Convert tuples to objects if needed
+  const normalizedInput = data.map((d) => {
+    if (Array.isArray(d) && d.length === 2) {
+      return { symbol: d[0], weight: d[1] };
+    }
+    return d; // assume already {symbol, weight}
+  });
 
-  // if total is zero, give each entry an equal size to avoid division by zero
-  const normalizedData = (total > 0 ? data : data.map(d => ({ ...d, weight: 1 })))
+  const total = normalizedInput.reduce((acc, d) => acc + (Number(d.weight) || 0), 0);
+
+  const normalizedData = (total > 0 ? normalizedInput : normalizedInput.map(d => ({ ...d, weight: 1 })))
     .map((d) => ({
       name: d.symbol,
-      size: ((Number(d.weight) || 0) / (total > 0 ? total : data.length)) * 100
+      size: ((Number(d.weight) || 0) / (total > 0 ? total : normalizedInput.length)) * 100
     }));
 
+  // Dynamic color generator
+  const getColor = (index) => {
+    const hue = (index * 360) / normalizedData.length;
+    return `hsl(${hue}, 70%, 50%)`;
+  };
+
   return (
-    <div style={{ width: "100%", height: 500 }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <Treemap
-          data={normalizedData}
-          dataKey="size"
-          stroke="#fff"
-          fill="#8884d8"
-          ratio={4 / 3} // use 'ratio' prop for Treemap
-        >
-          {normalizedData.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-          ))}
-          <Tooltip
-            content={({ payload }) => {
-              if (payload && payload.length && payload[0].payload) {
-                const { name, size } = payload[0].payload;
-                return (
-                  <div
-                    style={{
-                      background: "rgba(0, 0, 0, 0.75)",
-                      color: "#fff",
-                      padding: "5px 10px",
-                      borderRadius: 5
-                    }}
-                  >
-                    <strong>{name}</strong>
-                    <br />
-                    Weight: {Number(size).toFixed(2)}%
-                  </div>
-                );
-              }
-              return null;
-            }}
-          />
-        </Treemap>
-      </ResponsiveContainer>
+    <div style={{ width: "100%", height: 500, border: "None" }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <Treemap data={normalizedData} dataKey="size" stroke="#fff" ratio={4 / 3} isAnimationActive={false}>
+            {normalizedData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={getColor(index)} />
+            ))}
+            <Tooltip
+              content={({ payload }) => {
+                if (payload && payload.length && payload[0].payload) {
+                  const { name, size } = payload[0].payload;
+                  return (
+                    <div
+                      style={{
+                        background: "rgba(0,0,0,0.75)",
+                        color: "#fff",
+                        padding: "5px 10px",
+                        borderRadius: 5
+                      }}
+                    >
+                      <strong>{name}</strong>
+                      <br />
+                      Weight: {Number(size).toFixed(2)}%
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
+          </Treemap>
+        </ResponsiveContainer>
     </div>
   );
 };

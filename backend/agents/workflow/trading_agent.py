@@ -1,4 +1,8 @@
 from langchain_ollama import ChatOllama
+import os, json
+from dotenv import load_dotenv
+load_dotenv()
+from langchain_google_genai import ChatGoogleGenerativeAI
 from .propagation import Propagater
 from agents.analysts import (
     create_market_analyst,
@@ -21,8 +25,17 @@ class TradingAgent:
     ):
         
 
-        self.deep_thinking_llm = ChatOllama(model="llama3.1", temperature=0.2)
-        self.quick_thinking_llm = ChatOllama(model="llama3.1", temperature=0.7)
+        self.deep_thinking_llm = ChatGoogleGenerativeAI(
+            model="models/gemini-2.5-flash-lite",
+            temperature=0.2,
+            google_api_key=os.getenv("GEMINI_API_KEY")
+        )
+
+        self.quick_thinking_llm = ChatGoogleGenerativeAI(
+            model="models/gemini-2.5-flash-lite",
+            temperature=0.7,
+            google_api_key=os.getenv("GEMINI_API_KEY")
+        )
 
         self.propagater = Propagater()
 

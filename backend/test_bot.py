@@ -5,8 +5,10 @@ from langchain_core.prompts import ChatPromptTemplate
 from utils.alpaca_utils import get_account_info, get_positions, place_market_order
 from langchain_ollama.llms import OllamaLLM
 from langchain_ollama import ChatOllama
-import json
+import os, json
 from dotenv import load_dotenv
+from langchain_google_genai import ChatGoogleGenerativeAI
+
 
 load_dotenv()
 # Define tools with the @tool decorator (new standard)
@@ -30,7 +32,12 @@ def get_positions_tool(_: str) -> str:
 tools = [get_account_info_tool, get_positions_tool]#, place_market_order_tool
 
 # Initialize model
-model = ChatOllama(model="llama3.1", temperature=0.2)
+model = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash",
+    temperature=0.2,
+    google_api_key=os.getenv("GEMINI_API_KEY")
+)
+
 
 def classify_intent(message: str) -> str:
     """
@@ -82,6 +89,7 @@ def summarize_message(message: str, data: str) -> str:
 
 # Example interaction
 if __name__ == "__main__":
+
     print("🤖 Alpaca Agent ready! Type 'exit' to quit.\n")
     while True:
         query = input("You: ")

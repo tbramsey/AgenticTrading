@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+.env
+venv/
+.venv/
+
+# Node / React / Vite
+node_modules/
+dist/
+build/
+.cache/
+*.log
+
+# VS Code / JetBrains
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Ignore stock and S&P 500 data files
+stock_data.csv
+S&P-500.csv

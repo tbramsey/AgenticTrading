@@ -1,19 +1,15 @@
-import React from "react";
-import PortfolioTreemap from "./components/PortfolioTreemap";
+import React, { useEffect, useState } from "react";
+import PortfolioTreemap from "./components/PortfolioTreemap.jsx";
 
 const App = () => {
-  const portfolio = [
-    { symbol: "AAPL", weight: 25 },
-    { symbol: "MSFT", weight: 18 },
-    { symbol: "GOOG", weight: 12 },
-    { symbol: "AMZN", weight: 9 },
-    { symbol: "TSLA", weight: 8 },
-    { symbol: "NVDA", weight: 6 },
-    { symbol: "BRK.B", weight: 5 },
-    { symbol: "META", weight: 4 },
-    { symbol: "V", weight: 7 },
-    { symbol: "JNJ", weight: 6 }
-  ];
+  const [portfolio, setPortfolio] = useState([]);
+
+  useEffect(() => {
+    fetch("http://localhost:5000/portfolio")
+      .then((res) => res.json())
+      .then((data) => setPortfolio(data))
+      .catch((err) => console.error(err));
+  }, []);
 
   return (
     <div style={{ padding: 20 }}>
