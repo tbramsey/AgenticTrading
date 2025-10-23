@@ -1,6 +1,8 @@
+from arrow import get
 from dotenv import load_dotenv
 import os
 import certifi
+
 
 load_dotenv()
 
@@ -44,6 +46,27 @@ def safe_int(value, default=0):
         return int(float(value))
     except (ValueError, TypeError):
         return default
+    
+
+def get_live_price(symbol: str):
+    polygon_api_key = os.getenv("POLYGON_API_KEY")
+    if not polygon_api_key:
+        raise RuntimeError("Missing POLYGON_API_KEY environment variable.")
+
+    url = f"https://api.polygon.io/v2/aggs/ticker/{symbol}/prev?apiKey={polygon_api_key}"
+
+    try:
+        response = requests.get(url, timeout=10)
+        data = response.json()
+
+        if "results" in data and len(data["results"]) > 0:
+            return round(float(data["results"][0]["c"]), 2)
+        elif "message" in data:
+            raise RuntimeError(f"Polygon error: {data['message']}")
+        else:
+            raise RuntimeError(f"Unexpected Polygon response: {data}")
+    except Exception as e:
+        raise RuntimeError(f"Failed to fetch free Polygon price for {symbol}: {e}")
 
 
 def update_stock_data(symbol, stock_info, filename=None):
@@ -313,11 +336,7 @@ def fetch_with_FMP(symbol):
         raise RuntimeError(f"FMP JSON parse failed: {e}") from e
     
     
-
-
-
-
-if __name__ == "__main__":
+def get_data():
     # Read S&P-500 list from backend/data
     if not os.path.exists(SANDP_FILE):
         raise FileNotFoundError(f"S&P-500 file not found at {SANDP_FILE}")
@@ -343,4 +362,24 @@ if __name__ == "__main__":
             break
 
         time.sleep(1)
-      
+
+
+
+if __name__ == "__main__":
+    #get_data()
+    marketData = pd.read_csv("backend/data/stock_data.csv")
+    tickers = marketData["symbol"].tolist()
+
+    for i, symbol in enumerate(tickers):
+        try:
+            price = get_live_price(symbol)
+            marketData.at[i, "price"] = price
+            print(f"{symbol}: {price}")
+        except Exception as e:
+            print(f"Failed to get price for {symbol}: {e}")
+        time.sleep(12)
+        marketData.to_csv("backend/data/stock_data.csv", index=False)
+
+    
+
+    

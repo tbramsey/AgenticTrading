@@ -1,29 +1,24 @@
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.db
-*.sqlite3
-.env
-venv/
-.venv/
-
-# Node / React / Vite
-node_modules/
-dist/
-build/
-.cache/
+# Logs
+logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# VS Code / JetBrains
-.vscode/
-.idea/
+node_modules
+dist
+dist-ssr
+*.local
 
-# OS
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
 .DS_Store
-Thumbs.db
-
-# Ignore stock and S&P 500 data files
-stock_data.csv
-S&P-500.csv
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

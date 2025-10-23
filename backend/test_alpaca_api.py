@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def test_alpaca_api():
-    api_key = os.getenv('APCA_API_KEY_ID')
-    api_secret = os.getenv('APCA_API_SECRET_KEY')
+    api_key = os.getenv('ALPACA_API_KEY')
+    api_secret = os.getenv('ALPACA_API_SECRET')
 
     if not api_key or not api_secret:
         print('❌ Missing Alpaca API credentials in environment variables.')

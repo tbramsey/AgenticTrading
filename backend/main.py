@@ -1,7 +1,16 @@
+from sympy import Ge
 from langchain_ollama import ChatOllama
 from agents.workflow.trading_agent import TradingAgent
+import os, json
+from dotenv import load_dotenv
+load_dotenv()
+from langchain_google_genai import ChatGoogleGenerativeAI
 
-model = ChatOllama(model="llama3.1", temperature=0.2)
+model = ChatGoogleGenerativeAI(
+    model="models/gemini-2.5-flash-lite",
+    temperature=0.2,
+    google_api_key=os.getenv("GEMINI_API_KEY")
+)
 
 def classify_ticker(user_message: str) -> str:
     """Call the LLM to extract a ticker symbol from a user message.

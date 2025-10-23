@@ -1,4 +1,6 @@
 flask
+sympy
+flask_cors
 
 alpaca-py
 python-dotenv
