@@ -12,7 +12,7 @@ const App = () => {
   }, []);
 
   return (
-    <div style={{ padding: 20 }}>
+    <div style={{ padding: 20, height: "100vh", width: "50vw" }}>
       <h2>Portfolio Treemap</h2>
       <PortfolioTreemap data={portfolio} />
     </div>

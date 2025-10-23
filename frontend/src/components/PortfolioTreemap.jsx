@@ -17,7 +17,7 @@ const PortfolioTreemap = ({ data, showChart = false }) => {
     if (Array.isArray(d) && d.length === 2) {
       return { symbol: d[0], weight: d[1] };
     }
-    return d; // assume already {symbol, weight}
+    return d;
   });
 
   const total = normalizedInput.reduce((acc, d) => acc + (Number(d.weight) || 0), 0);
@@ -39,7 +39,7 @@ const PortfolioTreemap = ({ data, showChart = false }) => {
         <ResponsiveContainer width="100%" height="100%">
           <Treemap data={normalizedData} dataKey="size" stroke="#fff" ratio={4 / 3} isAnimationActive={false}>
             {normalizedData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={getColor(index)} />
+              <Cell key={`cell-${index}`} fill={getColor(index)}/>
             ))}
             <Tooltip
               content={({ payload }) => {
@@ -51,7 +51,7 @@ const PortfolioTreemap = ({ data, showChart = false }) => {
                         background: "rgba(0,0,0,0.75)",
                         color: "#fff",
                         padding: "5px 10px",
-                        borderRadius: 5
+                        borderRadius: 5,
                       }}
                     >
                       <strong>{name}</strong>
