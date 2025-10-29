@@ -1,4 +1,5 @@
 import berryLogo from "./Berry_Logo.png";
+import { Link } from 'react-router-dom';
 
 const navigation = [
   { href: "/dashboard", text: "DASHBOARD" },
@@ -35,15 +36,13 @@ export function Welcome() {
           <ul className="flex space-x-12 text-3xl font-medium">
             {navigation.map((item) => (
               <li key={item.text}>
-                <a
+                <Link
                   className="hover:opacity-75 transition-opacity"
                   style={{ color: COLORS.primaryGreen }}
-                  href={item.href}
-                  target="_blank"
-                  rel="noreferrer"
+                  to={item.href}
                 >
                   {item.text}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>

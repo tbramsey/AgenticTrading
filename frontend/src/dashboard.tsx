@@ -103,6 +103,12 @@ export function DashboardPage() {
         </div>
       </div>
 
+        <footer className="p-4 mt-auto" style={{ backgroundColor: COLORS.footerGreen }}>
+            <p className="text-sm text-center" style={{ color: COLORS.textDark }}>
+            Project by: Lahari, Artin, Tagan, and Navya
+            </p>
+        </footer>
+
     </main>
   );
 }

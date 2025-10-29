@@ -6,6 +6,7 @@
     ".react-router/types/**/*"
   ],
   "compilerOptions": {
+    "allowImportingTsExtensions": true,
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "types": ["node", "vite/client"],
     "target": "ES2022",
@@ -16,6 +17,7 @@
     "baseUrl": ".",
     "paths": {
       "~/*": ["./app/*"]
+      
     },
     "esModuleInterop": true,
     "verbatimModuleSyntax": true,
