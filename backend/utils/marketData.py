@@ -6,20 +6,16 @@ import certifi
 
 load_dotenv()
 
-from alpaca.data.historical import StockHistoricalDataClient
-from alpaca.data.requests import StockBarsRequest
-from alpaca.data.timeframe import TimeFrame
+
 from datetime import datetime, timedelta, timezone
 import pandas as pd
-import yfinance as yf
+#import yfinance as yf
 import time
 import traceback
 import requests
 
 API_KEY = os.getenv("ALPACA_API_KEY")
 API_SECRET = os.getenv("ALPACA_API_SECRET")
-
-client = StockHistoricalDataClient(API_KEY, API_SECRET)
 
 # Compute data directory relative to this file: backend/data
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -138,7 +134,16 @@ def score_stock(current_revenue_growth, past_revenue_growth, pe_ratio, dividend_
     }
 
 
-def fetch_with_alpaca(symbol, timeframe=TimeFrame.Day):
+def fetch_with_alpaca(symbol, timeframe=None):
+    from alpaca.data.historical import StockHistoricalDataClient
+    from alpaca.data.requests import StockBarsRequest
+    from alpaca.data.timeframe import TimeFrame
+
+    if timeframe is None:
+        timeframe = TimeFrame.Day
+
+    client = StockHistoricalDataClient(API_KEY, API_SECRET)
+
     if client is None:
         raise RuntimeError("Alpaca client not configured (missing ALPACA_API_KEY/SECRET).")
 
@@ -274,7 +279,43 @@ def fetch_with_alpha_vintage(symbol):
     }
 
     return ("Stock Info", stock_info)
+ 
+def fetch_historical_stockprices(portfolio):
+    key = os.getenv("FMP_API_KEY")
+    if not key:
+        raise RuntimeError("FMP API key not provided. Set FMP_API_KEY env var or pass api_key.")
 
+    all_prices = {}
+
+    for symbol, weight in (portfolio.items() if isinstance(portfolio, dict) else portfolio):
+        url = f"https://financialmodelingprep.com/stable/historical-price-eod/light?symbol={symbol}&apikey={key}"
+        try:
+            resp = requests.get(url, timeout=10, verify=certifi.where())
+            resp.raise_for_status()
+            data = resp.json().get("historical", [])
+
+            if not data:
+                print(f"No historical data found for {symbol}")
+                continue
+
+            df = pd.DataFrame(data)[["date", "close"]]
+            df["date"] = pd.to_datetime(df["date"])
+            df.set_index("date", inplace=True)
+            df.rename(columns={"close": symbol}, inplace=True)
+            df[symbol] = (df[symbol] / df[symbol].iloc[0]) * weight  # normalized weighting
+            all_prices[symbol] = df[symbol]
+
+        except Exception as e:
+            print(f"Error fetching {symbol}: {e}")
+
+    if not all_prices:
+        raise ValueError("No valid price data fetched for any symbols.")
+
+    price_df = pd.concat(all_prices.values(), axis=1).sort_index()
+    price_df["portfolio_value"] = price_df.sum(axis=1)
+    return price_df.reset_index()
+
+    
 
 def fetch_with_FMP(symbol):
     def average_revenue_growth(data, years=5):
@@ -367,19 +408,36 @@ def get_data():
 
 if __name__ == "__main__":
     #get_data()
-    marketData = pd.read_csv("backend/data/stock_data.csv")
-    tickers = marketData["symbol"].tolist()
+    # marketData = pd.read_csv("backend/data/stock_data.csv")
+    # tickers = marketData["symbol"].tolist()
 
-    for i, symbol in enumerate(tickers):
-        try:
-            price = get_live_price(symbol)
-            marketData.at[i, "price"] = price
-            print(f"{symbol}: {price}")
-        except Exception as e:
-            print(f"Failed to get price for {symbol}: {e}")
-        time.sleep(12)
-        marketData.to_csv("backend/data/stock_data.csv", index=False)
+    # for i, symbol in enumerate(tickers):
+    #     try:
+    #         price = get_live_price(symbol)
+    #         marketData.at[i, "price"] = price
+    #         print(f"{symbol}: {price}")
+    #     except Exception as e:
+    #         print(f"Failed to get price for {symbol}: {e}")
+    #     time.sleep(12)
+    #     marketData.to_csv("backend/data/stock_data.csv", index=False)
 
-    
+    portfolio = [
+        ("AAPL", 0.4),
+        ("MSFT", 0.35),
+        ("GOOGL", 0.25)
+    ]
+
+    df = fetch_historical_stockprices(portfolio)
+    print(df.head())
+
+    import matplotlib.pyplot as plt
+    plt.figure(figsize=(10, 5))
+    plt.plot(df["date"], df["portfolio_value"], label="Portfolio Value", color="blue")
+    plt.title("Portfolio Historical Value")
+    plt.xlabel("Date")
+    plt.ylabel("Weighted Value")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 
     
