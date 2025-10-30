@@ -1,5 +1,5 @@
 import pandas as pd
-from sympy import div, im
+from sympy import div, im, sec
 from dotenv import load_dotenv
 import requests
 import os
@@ -89,7 +89,7 @@ def score_stock(info):
 
     return pd.Series([round(total_roi, 2), round(total_risk, 2)])
 
-def make_portfolio(diversification, max_risk):
+def make_portfolio(diversification, max_risk, sectors):
     if diversification > 90 and diversification <= 100:
         num_stocks = 35
     elif diversification > 80:
@@ -113,6 +113,7 @@ def make_portfolio(diversification, max_risk):
 
     stock_df[["roiScore", "riskScore"]] = stock_df.apply(score_stock, axis=1)
     stock_df = stock_df[stock_df["riskScore"] < max_risk]
+    stock_df = stock_df[stock_df["sector"].isin(sectors)]
     stock_df = stock_df.sort_values("roiScore", ascending=False)
 
     weights = np.logspace(0, -0.5, num_stocks)  # log scale from 10^0 to 10^-1
@@ -121,12 +122,28 @@ def make_portfolio(diversification, max_risk):
     for (row, weight) in zip(stock_df.head(num_stocks).itertuples(), weights):
         weight = int(weight)
         print(f"{row.symbol}: {row.roiScore}, Weight: {weight}%")
-        portfolio.append((row.symbol, weight))
+        portfolio.append((row.symbol, weight, row.description))
     
+    #print(stock_df["sector"].unique())
+
     return portfolio
 
 if __name__ == "__main__":
-    portfolio = make_portfolio(diversification=50, max_risk=50)
+    sectors = [
+        "INDUSTRIALS",
+        "HEALTHCARE",
+        "TECHNOLOGY",
+        "UTILITIES",
+        "FINANCIAL SERVICES",
+        "BASIC MATERIALS",
+        "CONSUMER CYCLICAL",
+        "REAL ESTATE",
+        "COMMUNICATION SERVICES",
+        "CONSUMER DEFENSIVE",
+        "ENERGY"
+    ]
+
+    portfolio = make_portfolio(diversification=50, max_risk=50, sectors=sectors)
     print("\nGenerated Portfolio:")
     for symbol, weight in portfolio:
         print(f"{symbol}: {weight}%")
