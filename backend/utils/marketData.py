@@ -287,7 +287,7 @@ def fetch_historical_stockprices(portfolio):
 
     all_prices = {}
 
-    for symbol, weight in (portfolio.items() if isinstance(portfolio, dict) else portfolio):
+    for symbol, weight, _ in (portfolio.items() if isinstance(portfolio, dict) else portfolio):
         url = f"https://financialmodelingprep.com/stable/historical-price-eod/light?symbol={symbol}&apikey={key}"
         try:
             resp = requests.get(url, timeout=10, verify=certifi.where())

@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+:root { /* Main styling */
+  --green1: #7c844f;
+  --green2: #a5bf7b;
+  --green3: #f3f6cd;
+  --white: #f3f3f3;
+  --black: #292929;
+  --font-sans: "ZT Gatha", 
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+html,
+body {
+  background-color: var(--white);
+  }
+

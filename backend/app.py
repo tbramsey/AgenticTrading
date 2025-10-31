@@ -17,12 +17,15 @@ def get_portfolio():
     if len(sectors) == 1 and "," in sectors[0]:
         sectors = [s.strip() for s in sectors[0].split(",") if s.strip()]
     current_portfolio = make_portfolio(diversification, max_risk, sectors)
+
     return jsonify(current_portfolio)
 
 @app.route("/portfolio/current", strict_slashes=False)
 def get_current_portfolio():
-    #global current_portfolio
-    #if current_portfolio is None:
+    # global current_portfolio
+    # print("DEBUG2 portfolio:", current_portfolio)
+
+    # if current_portfolio is None:
     #    return jsonify({"error": "No portfolio generated yet"}), 404
     mock_data = [
         {"date": "2025-10-01", "portfolio_value": 100000},
@@ -40,7 +43,7 @@ def get_current_portfolio():
     #     return jsonify(data)
     # except Exception as e:
     #     return jsonify({"error": str(e)}), 500
-
+    
 
 if __name__ == "__main__":
     app.run(port=5000)
