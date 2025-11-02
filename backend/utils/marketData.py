@@ -279,6 +279,56 @@ def fetch_with_alpha_vintage(symbol):
     }
 
     return ("Stock Info", stock_info)
+
+
+
+def fetch_stockprices_vintage(symbol):
+    key = os.getenv("ALPHA_VANTAGE_API_KEY_3")
+    if not key:
+        raise RuntimeError("No Alpha Vantage API key provided.")
+
+    all_prices = {}
+
+    url = f"https://www.alphavantage.co/query?function=TIME_SERIES_WEEKLY_ADJUSTED&symbol={symbol}&apikey={key}"
+    try:
+        resp = requests.get(url, timeout=10, verify=certifi.where())
+        resp.raise_for_status()
+        data = resp.json()
+
+        series = data.get("Weekly Adjusted Time Series", {})
+        if not series:
+            print(f"No historical data found for {symbol}")
+            return None
+
+        # Convert to DataFrame
+        df = (
+            pd.DataFrame.from_dict(series, orient="index")[["5. adjusted close"]]
+            .rename(columns={"5. adjusted close": symbol})
+            .astype(float)
+        )
+
+        # Convert index to datetime and sort
+        df.index = pd.to_datetime(df.index)
+        df.sort_index(inplace=True)
+
+        # Normalize prices (start = 1.0)
+        df[symbol] = df[symbol] / df[symbol].iloc[0]
+
+        all_prices[symbol] = df[symbol]
+
+    except Exception as e:
+        print(f"Error fetching {symbol}: {e}")
+        return None
+
+    if not all_prices:
+        raise ValueError("No valid price data fetched for any symbols.")
+
+    price_df = pd.concat(all_prices.values(), axis=1).sort_index()
+    price_df["portfolio_value"] = price_df.sum(axis=1)
+
+    return price_df.reset_index().rename(columns={"index": "date"})
+
+
  
 def fetch_historical_stockprices(portfolio):
     key = os.getenv("FMP_API_KEY")
@@ -407,37 +457,55 @@ def get_data():
 
 
 if __name__ == "__main__":
-    #get_data()
-    # marketData = pd.read_csv("backend/data/stock_data.csv")
-    # tickers = marketData["symbol"].tolist()
+    marketData = pd.read_csv("../data/stock_data.csv")
+    tickers = marketData["symbol"].tolist()
 
-    # for i, symbol in enumerate(tickers):
-    #     try:
-    #         price = get_live_price(symbol)
-    #         marketData.at[i, "price"] = price
-    #         print(f"{symbol}: {price}")
-    #     except Exception as e:
-    #         print(f"Failed to get price for {symbol}: {e}")
-    #     time.sleep(12)
-    #     marketData.to_csv("backend/data/stock_data.csv", index=False)
+    path = "../data/stockprices.csv"
 
-    portfolio = [
-        ("AAPL", 0.4),
-        ("MSFT", 0.35),
-        ("GOOGL", 0.25)
-    ]
+    if not os.path.exists(path) or os.path.getsize(path) == 0:
+        existing_df = pd.DataFrame()
+    else:
+        existing_df = pd.read_csv(path, parse_dates=["date"]).set_index("date")
 
-    df = fetch_historical_stockprices(portfolio)
-    print(df.head())
+    for symbol in tickers[500:]:
+        if symbol in existing_df.columns:
+            print(f"Already have {symbol}, skipping.")
+            continue
 
-    import matplotlib.pyplot as plt
-    plt.figure(figsize=(10, 5))
-    plt.plot(df["date"], df["portfolio_value"], label="Portfolio Value", color="blue")
-    plt.title("Portfolio Historical Value")
-    plt.xlabel("Date")
-    plt.ylabel("Weighted Value")
-    plt.legend()
-    plt.grid(True)
-    plt.show()
+        try:
+            df = fetch_stockprices_vintage(symbol)
+            df = df.set_index("date")[[symbol]]
+            print(f"Fetched {symbol}")
+
+            if existing_df.empty:
+                existing_df = df
+            else:
+                existing_df = existing_df.join(df, how="outer")
+
+        except Exception as e:
+            print(f"Failed to get price for {symbol}: {e}")
+            break
+
+    existing_df["portfolio_value"] = existing_df.sum(axis=1)
+    existing_df.sort_index().to_csv(path)
+
+    # portfolio = [
+    #     ("AAPL", 0.4),
+    #     ("MSFT", 0.35),
+    #     ("GOOGL", 0.25)
+    # ]
+
+    # df = fetch_historical_stockprices(portfolio)
+    # print(df.head())
+
+    # import matplotlib.pyplot as plt
+    # plt.figure(figsize=(10, 5))
+    # plt.plot(df["date"], df["portfolio_value"], label="Portfolio Value", color="blue")
+    # plt.title("Portfolio Historical Value")
+    # plt.xlabel("Date")
+    # plt.ylabel("Weighted Value")
+    # plt.legend()
+    # plt.grid(True)
+    # plt.show()
 
     

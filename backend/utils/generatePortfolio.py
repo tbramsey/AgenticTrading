@@ -128,25 +128,66 @@ def make_portfolio(diversification, max_risk, sectors):
 
     return portfolio
 
-if __name__ == "__main__":
-    sectors = [
-        "INDUSTRIALS",
-        "HEALTHCARE",
-        "TECHNOLOGY",
-        "UTILITIES",
-        "FINANCIAL SERVICES",
-        "BASIC MATERIALS",
-        "CONSUMER CYCLICAL",
-        "REAL ESTATE",
-        "COMMUNICATION SERVICES",
-        "CONSUMER DEFENSIVE",
-        "ENERGY"
-    ]
+def fetch_stockprices(portfolio, startdate):
+    df = pd.read_csv("backend/data/stockprices.csv")
 
-    portfolio = make_portfolio(diversification=50, max_risk=50, sectors=sectors)
-    print("\nGenerated Portfolio:")
-    for symbol, weight in portfolio:
-        print(f"{symbol}: {weight}%")
+    # Ensure 'date' column is parsed and set as index
+    if 'date' in df.columns:
+        df['date'] = pd.to_datetime(df['date'])
+        df = df.set_index('date')
+
+    # Trim data to start from 2015
+    df = df[df.index >= pd.Timestamp(startdate)]
+
+    # Initialize portfolio value column
+    df["portfolio_value"] = 0.0
+
+    initial_investment = 100
+
+    for symbol, weight, _ in portfolio:
+        if symbol not in df.columns:
+            print(f"Warning: {symbol} not found in data, skipping.")
+            continue
+
+        allocation = (weight / 100) * initial_investment
+        first_price = df[symbol].dropna().iloc[0] if not df[symbol].dropna().empty else None
+
+        if first_price is None or first_price == 0:
+            print(f"Warning: No valid price data for {symbol}, skipping.")
+            continue
+
+        shares = allocation / first_price
+        df[f"{symbol}_shares"] = shares
+        df["portfolio_value"] += df[symbol] * shares
+
+    df["portfolio_value"] = ((df["portfolio_value"] - initial_investment) / initial_investment) * 100
+    return df.reset_index()
+
+if __name__ == "__main__":
+    # sectors = [
+    #     "INDUSTRIALS",
+    #     "HEALTHCARE",
+    #     "TECHNOLOGY",
+    #     "UTILITIES",
+    #     "FINANCIAL SERVICES",
+    #     "BASIC MATERIALS",
+    #     "CONSUMER CYCLICAL",
+    #     "REAL ESTATE",
+    #     "COMMUNICATION SERVICES",
+    #     "CONSUMER DEFENSIVE",
+    #     "ENERGY"
+    # ]
+
+    # portfolio = make_portfolio(diversification=50, max_risk=50, sectors=sectors)
+    # print("\nGenerated Portfolio:")
+    # for symbol, weight in portfolio:
+    #     print(f"{symbol}: {weight}%")
+
+    portfolio = [
+        {"symbol": "AAPL", "weight": 1.0, "desc": "None"}
+    ]
+    print(fetch_stockprices(portfolio))
+
 
 
       

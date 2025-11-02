@@ -1,69 +1,4 @@
-// import React, { useState, useEffect } from "react";
-// import {
-//   LineChart,
-//   Line,
-//   XAxis,
-//   YAxis,
-//   Tooltip,
-//   CartesianGrid,
-//   ResponsiveContainer,
-// } from "recharts";
-
-// const PriceChart = () => {
-//   const [data, setData] = useState([]);
-
-//   useEffect(() => {
-//     let isMounted = true;
-
-//     const fetchPortfolio = async () => {
-//       try {
-//         const res = await fetch("http://127.0.0.1:5000/portfolio/current");
-//         if (!res.ok) {
-//           console.error("portfolio/current fetch failed:", res.status);
-//           return;
-//         }
-//         const json = await res.json();
-//         if (isMounted) setData(json);
-//       } catch (err) {
-//         console.error("Error fetching portfolio:", err);
-//       }
-//     };
-
-//     fetchPortfolio();
-
-//     const handler = () => fetchPortfolio();
-//     window.addEventListener("portfolioUpdated", handler);
-
-//     return () => {
-//       isMounted = false;
-//       window.removeEventListener("portfolioUpdated", handler);
-//     };
-//   }, []);
-
-//   return (
-//     <ResponsiveContainer width={600} height={400}>
-//       <LineChart data={data}>
-//         <XAxis dataKey="date" />
-//         <YAxis domain={["auto", "auto"]} />
-//         <Tooltip />
-//         <CartesianGrid strokeDasharray="3 3" />
-//         <Line
-//           type="monotone"
-//           dataKey="portfolio_value"
-//           stroke="#8884d8"
-//           strokeWidth={2}
-//           dot={false}
-//         />
-//       </LineChart>
-//     </ResponsiveContainer>
-//   );
-// };
-
-// export default PriceChart;
-
-
-
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -75,6 +10,7 @@ import {
   Legend,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
+import DateButton from "./dateButton";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -82,28 +18,58 @@ interface Point { date: string; portfolio_value: number; }
 
 export default function PortfolioLineChart() {
   const [dataPoints, setDataPoints] = useState<Point[]>([]);
+  const [startDate, setStartDate] = useState<string>("2024-11-01");
+  const [selectedYears, setSelectedYears] = useState<number>(1);
 
-  useEffect(() => {
-    fetch("http://127.0.0.1:5000/portfolio/current")
+  const fetchPortfolio = useCallback((date: string) => {
+    fetch(`http://127.0.0.1:5000/portfolio/current?startdate=${date}`)
       .then((res) => res.json())
       .then((json) => setDataPoints(json))
       .catch((err) => console.error(err));
   }, []);
 
+  useEffect(() => {
+    fetchPortfolio(startDate);
+
+    const handleUpdate = () => {
+      setTimeout(() => fetchPortfolio(startDate), 500);
+    };
+
+    window.addEventListener("portfolioUpdated", handleUpdate);
+
+    return () => window.removeEventListener("portfolioUpdated", handleUpdate);
+  }, [fetchPortfolio, startDate]);
+
+
+  const handleDateApply = (startDate: string, years: number) => {
+    setStartDate(startDate);
+    setSelectedYears(years);
+  };
+
   const labels = dataPoints.map((p) => p.date);
   const values = dataPoints.map((p) => p.portfolio_value);
+  const lastValue = values?.[values.length - 1];
+  const formattedLabel = lastValue !== undefined ? `${lastValue.toFixed(2)}%` : "";
+
+  const isPositive = values[values.length - 1] >= values[0];
+  const lineColor = isPositive ? "#26a69a" : "#e53935";
 
   const data = {
     labels,
     datasets: [
       {
-        label: "Portfolio Value",
         data: values,
-        borderColor: "#26a69a",
-        backgroundColor: "rgba(38,166,154,0.2)",
-        pointBackgroundColor: "#26a69a",
+        borderColor: lineColor,
+        backgroundColor: isPositive
+          ? "rgba(38,166,154,0.2)"
+          : "rgba(229,57,53,0.2)",
+        pointBackgroundColor: lineColor,
         pointBorderColor: "#ffffff",
         tension: 0.3,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        hitRadius: 10,
+        hoverBorderWidth: 2,
       },
     ],
   };
@@ -111,23 +77,58 @@ export default function PortfolioLineChart() {
   const options = {
     responsive: true,
     plugins: {
-      legend: { labels: { color: "#DDD" } },
+      legend: { display: false },
     },
     scales: {
       x: {
-        ticks: { color: "#BBB" },
-        grid: { color: "rgba(100,100,100,0.3)" },
+        ticks: { display: false },
+        grid: { display: false },
+        border: { display: false },
       },
       y: {
-        ticks: { color: "#BBB" },
-        grid: { color: "rgba(100,100,100,0.3)" },
+        ticks: { display: false },
+        grid: { display: false },
+        border: { display: false },
       },
     },
   };
 
+
+
+  if (!Array.isArray(dataPoints)) {
+    console.error("Invalid data format:", dataPoints);
+    return <div>No portfolio data</div>;
+  }
+
   return (
-    <div style={{ width: "600px", height: "400px" }}>
+    <div style={{ width: "600px", height: "400px", border: "none" }}>
+      <div style={{
+            color: lastValue > 0 ? "green" : "red",
+            fontWeight: "bold",
+            textAlign: "center", width: "100%"
+          }}>
+        <label
+          style={{
+            color: lastValue > 0 ? "green" : "red",
+            fontWeight: "bold",
+          }}
+        >
+          {selectedYears}-Year ({formattedLabel})
+        </label>
+      </div>
+
       <Line options={options} data={data} />
+      <div style={{
+        display: "flex",
+        flexDirection: "row",
+        gap: "10px",
+        marginTop: "10px",
+      }}>
+        <DateButton years={1} onApply={handleDateApply} />
+        <DateButton years={2} onApply={handleDateApply} />
+        <DateButton years={5} onApply={handleDateApply} />
+        <DateButton years={10} onApply={handleDateApply} />
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Treemap, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import SettingsButton from "./settingsButton";
+import SettingsButton from "./SettingsButton";
 
 interface PortfolioTreemapProps {
   showChart?: boolean;
@@ -43,6 +43,8 @@ const PortfolioTreemap: React.FC<PortfolioTreemapProps> = ({ showChart = false }
       );
       const portfolio: PortfolioItem[] = await res.json();
       setData(portfolio);
+      window.dispatchEvent(new Event("portfolioUpdated"));
+
 
       try {
         window.dispatchEvent(new Event("portfolioUpdated"));
