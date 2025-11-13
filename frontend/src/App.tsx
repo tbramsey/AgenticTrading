@@ -1,12 +1,12 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import AuthPage from '@/pages/authPage.tsx'
+import { BrowserRouter } from 'react-router-dom'
+import AppRoutes from './routes.tsx'
 
 function App() {
-  const [count, setCount] = useState(0)
-
-  return <AuthPage />
+  return (
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
+  )
 }
 
 export default App

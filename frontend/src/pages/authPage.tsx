@@ -1,4 +1,4 @@
-import LoginModal from "@/components/modals/login.tsx"
+import LoginScreen from "@/components/modals/login.tsx"
 
 function AuthPage() {
   return (
@@ -12,7 +12,7 @@ function AuthPage() {
 
       {/* Right side — login/signup form */}
       <div className="flex-1 flex items-center justify-center bg-white">
-        <LoginModal />
+        <LoginScreen />
       </div>
     </div>
   )

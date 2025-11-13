@@ -5,42 +5,66 @@ import {
   FieldLabel,
   FieldSet,
 } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"   
+
+import { Input } from "@/components/ui/input"  
+
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 
 export default function LoginScreen() {
     return (
-    <div className="w-full max-w-md p-8 bg-gray-50 rounded-lg shadow-lg">
-        <h2 className="text-2xl font-semibold text-center mb-6">
-        Welcome Back 👋
-        </h2>
-
-        <FieldSet>
-        <FieldGroup>
-            <Field>
-            <FieldLabel htmlFor="username">Username</FieldLabel>
-            <Input id="username" type="text" placeholder="username" />
-            <FieldDescription>
-                Choose a unique username for your account.
-            </FieldDescription>
-            </Field>
-
-            <Field>
-            <FieldLabel htmlFor="password">Password</FieldLabel>
-            <FieldDescription>
-                Must be at least 8 characters long.
-            </FieldDescription>
-            <Input id="password" type="password" placeholder="••••••••" />
-            </Field>
-        </FieldGroup>
-        </FieldSet>
-
-        <button className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded">
-        Log In
-        </button>
-
-        <p className="text-center text-sm text-gray-500 mt-4">
-        Don’t have an account? <a href="#" className="text-blue-600 hover:underline">Sign up</a>
-        </p>
+    <div className="w-full max-w-md p-1 bg-gray-50 rounded-lg shadow-lg">
+      <Card>
+        <CardHeader>
+          <CardTitle>Login to your account</CardTitle>
+          <CardDescription>
+            Enter your email below to login to your account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="email">Email</FieldLabel>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="m@example.com"
+                  required
+                />
+              </Field>
+              <Field>
+                <div className="flex items-center">
+                  <FieldLabel htmlFor="password">Password</FieldLabel>
+                  <a
+                    href="#"
+                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
+                  >
+                    Forgot your password?
+                  </a>
+                </div>
+                <Input id="password" type="password" required />
+              </Field>
+              <Field>
+                <Button type="submit">Login</Button>
+                <Button variant="outline" type="button">
+                  Login with Google
+                </Button>
+                <FieldDescription className="text-center">
+                  Don&apos;t have an account? <a href="#">Sign up</a>
+                </FieldDescription>
+              </Field>
+            </FieldGroup>
+          </form>
+        </CardContent>
+      </Card>
     </div>);
 }
 
