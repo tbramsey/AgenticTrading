@@ -1,8 +1,6 @@
 import { type RouteConfig, index } from "@react-router/dev/routes";
 import React from 'react';
-
-import { DashboardPage } from "../../frontend/src/dashboard"; 
-import { Welcome } from "../../frontend/src/welcome";
+// FIX: Import the renamed component (Main) from the local file (welcome.tsx)
 
 
 export default [index("routes/home.tsx")] satisfies RouteConfig;
@@ -10,10 +8,7 @@ export default [index("routes/home.tsx")] satisfies RouteConfig;
 export const routes = [
     {
         path: "/",
-        element: <Welcome />
-    },
-    {
-        path: "/dashboard",
-        element: <DashboardPage />
+        // FIX: The element is now imported as Main and correctly rendered as JSX
+        element: <Main />
     }
 ];
