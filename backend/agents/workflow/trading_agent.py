@@ -11,12 +11,15 @@ from agents.analysts import (
     create_fundamentals_analyst
 )
 
-analyst_types = {
-    "market": create_market_analyst,
-    "media": create_media_analyst,
-    "news": create_news_analyst,
-    "fundamentals": create_fundamentals_analyst
-    }
+# NOTE: we will build analyst node callables (functions that accept state)
+# from the factory functions below inside the TradingAgent instance so
+# they can be bound to the agent LLMs. The factories (create_..._analyst)
+# return a callable that accepts the graph state and returns a dict.
+
+from .graph import CompiledGraph
+from .agent_states import AgentState
+
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
 class TradingAgent:
     def __init__(
@@ -43,22 +46,24 @@ class TradingAgent:
         self.trade_date = None
 
         self.selected_analysts = selected_analysts
+        # Build analyst node callables bound to this agent's LLM(s).
+        # Each factory returns a function that accepts `state` and
+        # returns a dict; the StateGraph expects those callables.
+        self.analyst_types = {
+            "market": create_market_analyst(self.quick_thinking_llm),
+            "media": create_media_analyst(self.quick_thinking_llm),
+            "news": create_news_analyst(self.quick_thinking_llm),
+            "fundamentals": create_fundamentals_analyst(self.quick_thinking_llm),
+        }
 
     def analyze_stock(self, ticker: str, trade_date: str):
         self.ticker = ticker
         self.trade_date = trade_date
 
-        init_state = self.propagater.initialize(ticker, trade_date)
+        init_state = AgentState()
+        # init_state['ticker'] = ticker
+        # init_state['trade_date'] = trade_date
 
-        for analyst in self.selected_analysts:
-            analyst_creator = analyst_types.get(analyst)
-            if analyst_creator:
-                print(f"Running {analyst} analyst...")
-                agent = analyst_creator(self.deep_thinking_llm)
-                report = agent(init_state)
-                init_state[f"{analyst}_report"] = report
-
-        for analyst in self.selected_analysts:
-            print(f"{analyst.capitalize()} Report:")
-            print(init_state[f"{analyst}_report"]["report"])
-            print("\n" + "="*50 + "\n")
+        Graph = CompiledGraph(self.analyst_types)
+        workflow = Graph.get_compiled_workflow()
+        workflow.invoke({'ticker': ticker, 'trade_date': trade_date, 'messages': [SystemMessage(f"You are going to analyze the stock with ticker {ticker} for the trade date {trade_date}.")]})
