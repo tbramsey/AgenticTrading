@@ -5,7 +5,7 @@ class AgentState(MessagesState):
     ticker: Annotated[str, "ticker of the company that we are interested in trading"]
     trade_date: Annotated[str, "What date we are trading at"]
 
-    sender: Annotated[str, "Agent that sent this message"]
+    sender: Annotated[str, lambda x, y: y]
 
     # research step
     market_report: Annotated[str, "Report from the Market Analyst"]

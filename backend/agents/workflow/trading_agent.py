@@ -66,4 +66,4 @@ class TradingAgent:
 
         Graph = CompiledGraph(self.analyst_types)
         workflow = Graph.get_compiled_workflow()
-        workflow.invoke({'ticker': ticker, 'trade_date': trade_date, 'messages': [SystemMessage(f"You are going to analyze the stock with ticker {ticker} for the trade date {trade_date}.")]})
+        workflow.invoke({'ticker': ticker, 'trade_date': trade_date})#, 'messages': [HumanMessage(f"Analyze the stock with ticker {ticker} for the trade date {trade_date}.")]})
