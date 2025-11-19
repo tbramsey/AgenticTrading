@@ -2,23 +2,21 @@ import time
 import json
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage
-from agents.utils.data_tools import get_stock_news
 
-
-def create_news_analyst(llm):
-    def news_analyst_node(state) -> dict:
-
-        print("Running News Analyst...")
-        tools = [get_stock_news]
-
+def create_media_analyst(llm):
+    def media_analyst_node(state) -> dict:
+        
         last_msg = state["messages"][-1] if state["messages"] else None
         if not hasattr(last_msg, "tool_calls") or len(last_msg.tool_calls) == 0:
-            state["messages"] += [HumanMessage(f"Analyze the news related to the stock with ticker {state['ticker']} for the trade date {state['trade_date']}.")]
-
+            state["messages"] += [HumanMessage(f"Analyze the media stance for the trade date {state['trade_date']}.")]
+        
+        print("Running Media Analyst...")
         sys_msg = f"""
         You are a news analyst. Based on the ticker {state['ticker']} and trade date {state['trade_date']}, 
-        provide a detailed news analysis report including recent news events, sentiment analysis, and potential impacts on the stock\n.
+        provide a detailed news analysis report including recent news events, sentiment analysis, and potential impacts on the stock.
         """
+
+        tools = []
 
         prompt = ChatPromptTemplate.from_messages(
             [
@@ -50,12 +48,11 @@ def create_news_analyst(llm):
         if len(response.tool_calls) == 0:
             report = response.content
 
-        print("News Report Generated.")
-        print(response)
+        print("Media Report Generated.")
+
         return {
-            "messages": [response],
-            "news_report": report,
-            "sender": "news"
+            "sentiment_report": report,
+            "sender": "media"
         }
     
-    return news_analyst_node
+    return media_analyst_node

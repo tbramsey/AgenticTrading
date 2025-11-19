@@ -4,12 +4,14 @@ from dotenv import load_dotenv
 load_dotenv()
 from langchain_google_genai import ChatGoogleGenerativeAI
 from .propagation import Propagater
-from agents.analysts import (
+from tradingagent.agents.analysts import (
     create_market_analyst,
     create_media_analyst,
     create_news_analyst,
     create_fundamentals_analyst
 )
+
+from .agent_states import DebateState
 
 # NOTE: we will build analyst node callables (functions that accept state)
 # from the factory functions below inside the TradingAgent instance so
@@ -64,6 +66,6 @@ class TradingAgent:
         # init_state['ticker'] = ticker
         # init_state['trade_date'] = trade_date
 
-        Graph = CompiledGraph(self.analyst_types)
+        Graph = CompiledGraph(self.analyst_types, self.quick_thinking_llm, self.deep_thinking_llm)
         workflow = Graph.get_compiled_workflow()
-        workflow.invoke({'ticker': ticker, 'trade_date': trade_date})#, 'messages': [HumanMessage(f"Analyze the stock with ticker {ticker} for the trade date {trade_date}.")]})
+        workflow.invoke({'ticker': ticker, 'trade_date': trade_date, 'debate_state': DebateState()})#, 'messages': [HumanMessage(f"Analyze the stock with ticker {ticker} for the trade date {trade_date}.")]})

@@ -3,11 +3,23 @@ import requests
 from typing import Optional, List, Dict
 from dotenv import load_dotenv
 from langchain.tools import tool
+import pprint
 
-load_dotenv()
+# from agents.dataflows.marketaux_utils import get_stock_news as fetch_marketaux_news
+# from agents.dataflows.massive_utils import (
+#     get_stock_news as fetch_massive_news,
+#     get_market_trends as fetch_massive_trends
+# )
+# from agents.dataflows.tiingo_utils import get_fundamental_data as fetch_tiingo_fundamentals
 
-mark_api_key = os.getenv("MARKETAUX_API_KEY")
-mass_api_key = os.getenv("MASSIVE_API_KEY")
+from tradingagent.dataflows import (
+    fetch_marketaux_news,
+    fetch_massive_news,
+
+    fetch_massive_trends,
+    
+    fetch_tiingo_fundamentals
+)
 
 @tool
 def get_stock_news(ticker: str, trade_date: str) -> Optional[List[Dict]]:
@@ -24,15 +36,9 @@ def get_stock_news(ticker: str, trade_date: str) -> Optional[List[Dict]]:
 
     print("GET_STOCK_NEWS called")
 
-    if not mark_api_key:
-        raise ValueError("News API_KEY not found in environment variables")
-    
-    url_mark = "https://api.marketaux.com/v1/news/all"
-    url_mass = "https://api.massive.com/v2/reference/news"
-
     structured_data = []
 
-    def structure_data(article: Dict) -> list:
+    def structure_data(articles: Dict) -> list:
         for i, article in enumerate(articles, 1):
             structured_data.append({
                 "title": article.get("title", "N/A"),
@@ -47,55 +53,12 @@ def get_stock_news(ticker: str, trade_date: str) -> Optional[List[Dict]]:
         # print("-------------\nStructured Data:\n ", structured_data)
         # print("--------------\nTicker:", ticker, "Trade Date:", trade_date)
         return structured_data
-
-    params = {
-        "symbols": ticker.upper(),
-        "filter_entities": "true",
-        "must_have_entities": "true",
-        "published_on": trade_date,
-        "limit": 3,
-        "api_token": mark_api_key
-    }
-
-    #MarketAux API Call
-    try:
-        response = requests.get(url_mark, params=params)
-        response.raise_for_status()
-        data = response.json()
-        
-        # MarketAux returns data directly, not a status field
-        if "data" in data:
-            articles = data.get("data", [])
-            warnings = data.get("warnings", [])
-            if warnings:
-                print(f"API Warnings: {warnings}")
-            structure_data(articles)
-        else:
-            print(f"Unexpected response format: {data}")
     
-    except requests.exceptions.RequestException as e:
-        print(f"(Marketaux) Error fetching news for {ticker}: {e}")
+    MarkData = fetch_marketaux_news(ticker, trade_date)
+    if MarkData: structure_data(MarkData)
+    MassData = fetch_massive_news(ticker, trade_date)
+    if MassData: structure_data(MassData)
 
-    params = {
-        "ticker": ticker.upper(),
-        "published_utc": trade_date,
-        "apiKey": mass_api_key
-    }
-
-    # Massive News API Call
-    try:
-        response = requests.get(url_mass, params=params)
-        response.raise_for_status()
-        data = response.json()
-        
-        if "results" in data:
-            articles = data.get("results", [])
-            structure_data(articles)
-        else:
-            print(f"Unexpected response format: {data}")
-    
-    except requests.exceptions.RequestException as e:
-        print(f"(Massive) Error fetching news for {ticker}: {e}")
     
     if structured_data:
         return structured_data
@@ -115,29 +78,6 @@ def get_market_trends(date: str) -> Optional[List[Dict]]:
     """
 
     print("GET_MARKET_NEWS called")
-
-    if not mass_api_key:
-        raise ValueError("News API_KEY not found in environment variables")
-    
-    url_mark = "https://api.marketaux.com/v1/news/all"
-    url_mass = f"https://api.massive.com//v2/aggs/grouped/locale/us/market/stocks/{date}"
-
-    structured_data = []
-
-    def structure_data(results: Dict) -> list:
-        for stock in results:
-            structured_data.append({
-                "ticker": stock.get("T", "N/A"),
-                "volume": stock.get("v", "N/A"),
-                "open": stock.get("o", "N/A"),
-                "close": stock.get("c", "N/A"),
-                "high": stock.get("h", "N/A"),
-                "low": stock.get("l", "N/A"),
-                "change": (stock.get("c", 0) - stock.get("o", 0))
-            })
-        
-        print("-------------\nStructured Data:\n ")
-        return structured_data
 
     def summarize_market_data(structured_data: List[Dict]) -> Dict:
         """
@@ -180,49 +120,62 @@ def get_market_trends(date: str) -> Optional[List[Dict]]:
         }
 
         return summary
-
-
-    params = {
-        "adjusted": "true",
-        "apiKey": mass_api_key
-    }
-
-    # Massive News API Call
-    try:
-        response = requests.get(url_mass, params=params)
-        response.raise_for_status()
-        data = response.json()
-        
-        if "results" in data:
-            indicators = data.get("results", [])
-            structure_data(indicators)
-        else:
-            print(f"Unexpected response format: {data}")
     
-    except requests.exceptions.RequestException as e:
-        print(f"(Massive) Error fetching news for date {date}: {e}")
+    structured_data = fetch_massive_trends(date)
     
     if structured_data:
         return summarize_market_data(structured_data)
     return None
 
+@tool
+def get_company_fundamentals(ticker: str, date: str) -> Optional[List[Dict]]:
+    """
+    Retrieve structured fundamental data for a stock.
+
+    Args:
+        ticker (str): Stock ticker symbol (e.g., 'AAPL').
+        date (str): Date in format YYYY-MM-DD (e.g., "2024-06-01")
+
+    Returns:
+        A structured dictionary containing:
+            - income_statement: Revenue, EBITDA, net income, EPS, etc.
+            - balance_sheet: Assets, liabilities, equity, debt, cash, inventory, etc.
+            - cash_flow: Operating cash flow, free cash flow, capex, dividends, etc.
+            - ratios: Profitability, leverage, efficiency, valuation metrics, etc.
+
+        Returns None if the API request fails or no data is available.
+    """
+
+    print("GET_COMPANY_FUNDAMENTALS called")
+
+    structured_data = fetch_tiingo_fundamentals(ticker, date)
+    
+    if structured_data:
+        return structured_data
+    return None
+
+#######
+
+############ FOR TESTING THE TOOLS FUNCTIONALLITTY #############
+
+##########
 
 if __name__ == "__main__":
     # Test the function
     test_ticker = "AAPL"
-    print(f"Fetching news for {test_ticker}...")
+    # print(f"Fetching news for {test_ticker}...")
     
-    try:
-        articles = get_stock_news.func(test_ticker, "2024-06-01")
+    # try:
+    #     articles = get_stock_news.func(test_ticker, "2024-06-01")
         
-        if articles:
-            print(f"\nFound {len(articles)} articles:\n")
-            print(articles)
-        else:
-            print("No articles found or API request failed.")
+    #     if articles:
+    #         print(f"\nFound {len(articles)} articles:\n")
+    #         print(articles)
+    #     else:
+    #         print("No articles found or API request failed.")
     
-    except Exception as e:
-        print(f"Error: {e}")
+    # except Exception as e:
+    #     print(f"Error: {e}")
 
     # test_date = "2025-08-05"
     # print(f"Fetching market data for date {test_date}...")
@@ -237,3 +190,15 @@ if __name__ == "__main__":
     
     # except Exception as e:
     #     print(f"Error: {e}")
+
+    try:
+        data = get_company_fundamentals.func(test_ticker, "2025-08-05")
+        
+        if data:
+            print(f"\nFound company fundamentals:\n")
+            pprint.pprint(data)
+        else:
+            print("No fundamentals found or API request failed.")
+    
+    except Exception as e:
+        print(f"Error: {e}")

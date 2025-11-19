@@ -1,4 +1,4 @@
-from agents.utils.data_tools import get_stock_news, get_market_trends
+from tradingagent.utils.data_tools import get_stock_news, get_market_trends, get_company_fundamentals
 
 def execute_tools(state):
     """Execute tool calls from the last message."""
@@ -34,6 +34,13 @@ def execute_tools(state):
             else:
                 # Fallback: try calling directly
                 result = get_market_trends(**tool_args)
+        elif tool_name == "get_company_fundamentals":
+            if hasattr(get_company_fundamentals, "invoke"):
+                result = get_company_fundamentals.invoke(tool_args)
+            elif hasattr(get_company_fundamentals, "func"):
+                result = get_company_fundamentals.func(**tool_args)
+            else:
+                result = get_company_fundamentals(**tool_args)
             
         # Create a simple dict message for tool result
         tool_message = {

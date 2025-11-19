@@ -1,24 +1,24 @@
 import time
 import json
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage
-from agents.utils.data_tools import get_market_trends
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from tradingagent.utils.data_tools import get_company_fundamentals
 
-def create_market_analyst(llm):
-    def market_analyst_node(state) -> dict:
-        
+
+def create_fundamentals_analyst(llm):
+    def fundamentals_analyst_node(state) -> dict:
+
         last_msg = state["messages"][-1] if state["messages"] else None
         if not hasattr(last_msg, "tool_calls") or len(last_msg.tool_calls) == 0:
-            state["messages"] += [HumanMessage(f"Analyze the market conditions for the trade date {state['trade_date']}.")]
+            state["messages"] += [HumanMessage(f"Analyze the market fundamentals for the trade date {state['trade_date']}.")]
 
-        print("Running Market Analyst...")
+        print("Running Fundamentals Analyst...")
         sys_msg = f"""
-        You are a trading assistant tasked with analyzing financial markets. You are tasked with analyzing general market conditions centered around the trade date {state['trade_date']}.
-        Provide a detailed market analysis report including recent price trends, volume analysis, and technical indicators.
-        You are analyzing general market conditions, not specifically related to any single stock.
+        You are a fundamentals analyst. Based on the ticker {state['ticker']} and trade date {state['trade_date']}, 
+        provide a detailed fundamentals analysis report including financial statements review, key ratios, and growth prospects.
         """
 
-        tools = [get_market_trends]  # Add any market analysis tools if available
+        tools = [get_company_fundamentals]
 
         prompt = ChatPromptTemplate.from_messages(
             [
@@ -50,14 +50,12 @@ def create_market_analyst(llm):
         if len(response.tool_calls) == 0:
             report = response.content
 
-        print("Market Report Generated.")
-
-        print(response)
+        print("Fundamentals Report Generated.")
 
         return {
             "messages": [response],
-            "market_report": report,
-            "sender": "market"
+            "fundamentals_report": report,
+            "sender": "fundamentals"
         }
     
-    return market_analyst_node
+    return fundamentals_analyst_node
