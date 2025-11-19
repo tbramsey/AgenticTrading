@@ -1,0 +1,46 @@
+import time
+import json
+
+
+def create_judge(llm):
+    def judge_node(state) -> dict:
+        market_research_report = state["market_report"]
+        sentiment_report = state["sentiment_report"]
+        news_report = state["news_report"]
+        fundamentals_report = state["fundamentals_report"]
+
+        debate_state = state["debate_state"]
+        history = debate_state.get("history", "")
+
+        prompt = f"""As the portfolio manager and debate facilitator, your role is to critically evaluate this round of debate and make a definitive decision: align with the bear analyst, the bull analyst, or choose Hold only if it is strongly justified based on the arguments presented.
+
+        Summarize the key points from both sides concisely, focusing on the most compelling evidence or reasoning. Your recommendation—Buy, Sell, or Hold—must be clear and actionable. Avoid defaulting to Hold simply because both sides have valid points; commit to a stance grounded in the debate's strongest arguments.
+
+        Additionally, develop a detailed investment plan for the trader. This should include:
+
+        Your Recommendation: A decisive stance supported by the most convincing arguments.
+        Rationale: An explanation of why these arguments lead to your conclusion.
+        Strategic Actions: Concrete steps for implementing the recommendation.
+        Use these insights to refine your decision-making and ensure you are learning and improving. Present your analysis conversationally, as if speaking naturally, without special formatting. 
+
+        Here is the debate:
+        Debate History:
+        {history}"""
+
+        response = llm.invoke(prompt)
+
+        new_debate_state = {
+            "judge_decision": response.content,
+            "history": debate_state.get("history", ""),
+            "bears_msg": debate_state.get("bears_msg", ""),
+            "bulls_msg": debate_state.get("bulls_msg", ""),
+            "last_msg": response.content,
+            "rounds_completed": debate_state["rounds_completed"],
+        }
+
+        return {
+            "debate_state": new_debate_state,
+            "investment_plan": response.content,
+        }
+
+    return judge_node

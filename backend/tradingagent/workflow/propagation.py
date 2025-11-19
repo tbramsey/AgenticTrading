@@ -6,12 +6,14 @@ class Propagater:
         """Create the initial state."""
         return {
             "messages": [("human", ticker)],
-            "company_of_interest": ticker,
+            "ticker": ticker,
             "trade_date": str(trade_date),
-
-
+            "sender": "",
             "market_report": "",
             "fundamentals_report": "",
             "sentiment_report": "",
             "news_report": "",
+            "investment_plan": "",
+            "trader_investment_plan": "",
+            "final_trade_decision": "",
         }
