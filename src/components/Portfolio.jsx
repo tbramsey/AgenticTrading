@@ -1,6 +1,20 @@
 // src/components/Portfolio.jsx
 import React from 'react';
 import BerryChat from './BerryChat';
+import { Pie, Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+} from 'chart.js';
+
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title);
 
 export default function Portfolio() {
   const assetAllocations = [
@@ -110,14 +124,50 @@ export default function Portfolio() {
           <div className="bg-dark-card rounded-xl border border-gray-800 p-6">
             <h3 className="text-lg font-bold text-white mb-4">Asset Allocation</h3>
             <div className="h-64 overflow-hidden">
-              <canvas id="allocationChart" />
+              <Pie
+                data={{
+                  labels: assetAllocations.map((a) => a.name),
+                  datasets: [
+                    {
+                      data: assetAllocations.map((a) => parseInt(a.percent, 10)),
+                      backgroundColor: ['#10b981', '#059669', '#34d399', '#f59e0b', '#6366f1'],
+                      borderColor: '#0b1110',
+                      borderWidth: 1,
+                    },
+                  ],
+                }}
+                options={{
+                  maintainAspectRatio: false,
+                  plugins: { legend: { position: 'bottom', labels: { color: '#9CA3AF' } } },
+                }}
+              />
             </div>
           </div>
 
           <div className="bg-dark-card rounded-xl border border-gray-800 p-6">
             <h3 className="text-lg font-bold text-white mb-4">Top Holdings Performance</h3>
             <div className="h-64 overflow-hidden">
-              <canvas id="holdingsChart" />
+              <Line
+                data={{
+                  labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                  datasets: [
+                    {
+                      label: 'Holdings Value',
+                      data: [12000, 12500, 12300, 12800, 13050, 12900, 13120],
+                      fill: true,
+                      backgroundColor: 'rgba(16,185,129,0.12)',
+                      borderColor: '#10b981',
+                      tension: 0.3,
+                      pointRadius: 0,
+                    },
+                  ],
+                }}
+                options={{
+                  maintainAspectRatio: false,
+                  scales: { x: { ticks: { color: '#9CA3AF' } }, y: { ticks: { color: '#9CA3AF' } } },
+                  plugins: { legend: { display: false } },
+                }}
+              />
             </div>
           </div>
         </div>
