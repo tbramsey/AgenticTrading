@@ -8,17 +8,16 @@ export default function RootLayout() {
   // const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col h-screen">
       <TopBar />
-
-      <SidebarProvider variant="inset">
-        <div className="flex min-h-[calc(100vh-64px)] w-full">
+      <SidebarProvider>
+        <div className="flex flex-1 w-full min-h-0">
           
-          <div className="pt-16">
+          <div>
             <AppSidebar />
           </div>
           
-          <SidebarInset>
+          <SidebarInset className="min-h-0">
             <main className="flex-1">
               <SidebarTrigger />
               <Outlet />
@@ -27,7 +26,7 @@ export default function RootLayout() {
 
         </div>
       </SidebarProvider>
-    </div>
+      </div>
     
 
   )

@@ -42,6 +42,34 @@ def get_stock_news(ticker: str, trade_date: str):
     except requests.exceptions.RequestException as e:
         print(f"(Massive) Error fetching news for {ticker}: {e}")
 
+import pandas as pd
+import pandas_market_calendars as mcal
+
+def last_open_market_day(date_str):
+    # Convert input
+    date = pd.to_datetime(date_str)
+
+    # Start looking from the previous calendar day
+    target = date - pd.Timedelta(days=1)
+
+    nyse = mcal.get_calendar('NYSE')
+
+    # Look back a bit to catch long weekends/holidays
+    start = target - pd.Timedelta(days=10)
+    end = target
+
+    schedule = nyse.schedule(start_date=start, end_date=end)
+    open_days = schedule.index
+
+    # Filter for open days <= the shifted day
+    past_open = open_days[open_days <= target]
+
+    if past_open.empty:
+        raise ValueError("No open market days found before this date. Kinda cursed.")
+
+    return past_open.max().strftime("%Y-%m-%d")
+
+
 def get_market_trends(date: str) -> Optional[List[Dict]]:
     """
     Fetch grouped market aggregate data for all US stocks on a specific date.
@@ -52,8 +80,6 @@ def get_market_trends(date: str) -> Optional[List[Dict]]:
     Returns:
         dict: Parsed grouped market data including volume, price changes, etc.
     """
-
-    print("GET_MARKET_NEWS called")
 
     def structure_data(results: Dict) -> list:
         structured_data = []
@@ -68,10 +94,10 @@ def get_market_trends(date: str) -> Optional[List[Dict]]:
                 "low": stock.get("l", "N/A"),
                 "change": (stock.get("c", 0) - stock.get("o", 0))
             })
-        
-        print("-------------\nStructured Data:\n ")
-        return structured_data
 
+        return structured_data
+    
+    date = last_open_market_day(date)
 
     params = {
         "adjusted": "true",

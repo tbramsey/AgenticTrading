@@ -47,8 +47,7 @@ def create_media_analyst(llm):
 
         if len(response.tool_calls) == 0:
             report = response.content
-
-        print("Media Report Generated.")
+            print("Media Report Generated.")
 
         return {
             "sentiment_report": report,

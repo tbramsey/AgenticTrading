@@ -49,8 +49,7 @@ def create_fundamentals_analyst(llm):
 
         if len(response.tool_calls) == 0:
             report = response.content
-
-        print("Fundamentals Report Generated.")
+            print("Fundamentals Report Generated.")
 
         return {
             "messages": [response],

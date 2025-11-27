@@ -49,9 +49,8 @@ def create_news_analyst(llm):
 
         if len(response.tool_calls) == 0:
             report = response.content
-
-        print("News Report Generated.")
-        print(response)
+            print("News Report Generated.")
+        
         return {
             "messages": [response],
             "news_report": report,

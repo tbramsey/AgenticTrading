@@ -15,9 +15,9 @@ def DispayResults(state):
     # print(state["market_report"])
     # print("\nFundamentals Report: \n")
     # print(state["fundamentals_report"])
-    print("\nFinal Messages: \n")
-    print(state["debate_state"]["history"])
-    print(state["investment_plan"])
+    print("\FINAL DECISION: \n")
+    # print(state["debate_state"]["history"])
+    print(state["final_trade_decision"])
 
 class CompiledGraph:
     def __init__(self, agents: dict, q_llm, d_llm):
@@ -45,7 +45,14 @@ class CompiledGraph:
         self.workflow.add_node("bull_debator", create_bull_debator(self.quick_thinking_llm))
         self.workflow.add_node("bear_debator", create_bear_debator(self.quick_thinking_llm))
 
-        self.workflow.add_node("judge", create_judge(self.quick_thinking_llm))
+        self.workflow.add_node("debate_judge", create_debate_judge(self.quick_thinking_llm))
+
+        self.workflow.add_node("trader", create_trader(self.quick_thinking_llm))
+
+        self.workflow.add_node("risky_analyst", create_risky_analyst(self.quick_thinking_llm))
+        self.workflow.add_node("safe_analyst", create_safe_analyst(self.quick_thinking_llm))
+        self.workflow.add_node("neutral_analyst", create_neutral_analyst(self.quick_thinking_llm))
+        self.workflow.add_node("risk_judge", create_risk_judge(self.quick_thinking_llm))
 
         def route_node(state, next_node):
             if state.get("messages") and len(state["messages"]) > 0:
@@ -79,7 +86,6 @@ class CompiledGraph:
         )
 
         self.workflow.add_edge(START, self.selected_analysts[0])
-        self.workflow.add_edge("display_results", END)
 
         self.workflow.add_conditional_edges(
             "bull_debator",
@@ -90,7 +96,25 @@ class CompiledGraph:
             self.conditions.continue_debate
         )
 
-        self.workflow.add_edge("judge", "display_results")
+        self.workflow.add_edge("debate_judge", "trader")
+
+        self.workflow.add_edge("trader", "risky_analyst")
+
+        self.workflow.add_conditional_edges(
+            "risky_analyst",
+            self.conditions.should_continue_risk_analysis
+        )
+        self.workflow.add_conditional_edges(
+            "safe_analyst",
+            self.conditions.should_continue_risk_analysis
+        )
+        self.workflow.add_conditional_edges(
+            "neutral_analyst",
+            self.conditions.should_continue_risk_analysis
+        )
+        self.workflow.add_edge("risk_judge", "display_results")
+
+        self.workflow.add_edge("display_results", END)
 
         return self.workflow.compile()
 

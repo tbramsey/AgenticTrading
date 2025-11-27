@@ -1,4 +1,5 @@
-import { Calendar, Home, Inbox, Search, Settings } from "lucide-react"
+import { Book, Home, Inbox, Moon, Search, Settings, Sun, MessageSquareText } from "lucide-react"
+import { useEffect, useState } from "react"
 
 import {
   Sidebar,
@@ -6,32 +7,35 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { Button } from "@/components/ui/button"
+import { type Theme, initTheme, toggleThemePreference } from "@/lib/theme"
 
 // Menu items.
 const items = [
   {
     title: "Dashboard",
-    url: "#",
+    url: "/",
     icon: Home,
   },
   {
-    title: "Inbox",
-    url: "#",
-    icon: Inbox,
-  },
-  {
-    title: "Calendar",
-    url: "#",
-    icon: Calendar,
+    title: "Analyze",
+    url: "chat",
+    icon: MessageSquareText,
   },
   {
     title: "Search",
     url: "#",
     icon: Search,
+  },
+  {
+    title: "Learn",
+    url: "learn",
+    icon: Book,
   },
   {
     title: "Settings",
@@ -41,9 +45,36 @@ const items = [
 ]
 
 export function AppSidebar() {
+  const [theme, setTheme] = useState<Theme>("light")
+
+  useEffect(() => {
+    const current = initTheme()
+    setTheme(current)
+  }, [])
+
+  const handleToggleTheme = () => {
+    setTheme((prev) => toggleThemePreference(prev))
+  }
+
   return (
-    <Sidebar variant="inset" collapsible="icon">
+    <Sidebar variant="floating" collapsible="icon">
       <SidebarContent>
+        <SidebarHeader>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {
+                <SidebarMenuItem key={"Logo"}>
+                  <SidebarMenuButton asChild>
+                    <a href={"/"}>
+                      <img src="/vite.svg" className="w-7 h-7" />
+                      <span>{"Barry"}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              }
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarHeader>
         <SidebarGroup>
           <SidebarGroupLabel>Application</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -61,7 +92,31 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Appearance</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start gap-2"
+                    onClick={handleToggleTheme}
+                  >
+                    {theme === "dark" ? <Moon className="size-4" /> : <Sun className="size-4" />}
+                    <span>{theme === "dark" ? "Dark mode" : "Light mode"}</span>
+                  </Button>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
     </Sidebar>
   )
 }
+
+          // <div className="flex items-center gap-2 p-2">
+          //   <img src="/vite.svg" className="w-7 h-7" />
+          //   <span className="font-semibold text-lg">Barry</span>
+          // </div>

@@ -49,10 +49,8 @@ def create_market_analyst(llm):
 
         if len(response.tool_calls) == 0:
             report = response.content
-
-        print("Market Report Generated.")
-
-        print(response)
+            print("Market Report Generated.")
+        
 
         return {
             "messages": [response],

@@ -2,8 +2,8 @@ import time
 import json
 
 
-def create_judge(llm):
-    def judge_node(state) -> dict:
+def create_debate_judge(llm):
+    def debate_judge_node(state) -> dict:
         market_research_report = state["market_report"]
         sentiment_report = state["sentiment_report"]
         news_report = state["news_report"]
@@ -43,4 +43,4 @@ def create_judge(llm):
             "investment_plan": response.content,
         }
 
-    return judge_node
+    return debate_judge_node
