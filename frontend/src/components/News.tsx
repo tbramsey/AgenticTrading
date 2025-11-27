@@ -63,7 +63,7 @@ const App = () => {
       borderRadius: '9999px',
     },
     scrollArea: {
-      height: '27vh', // Fixed height for scroll wheel effect
+      height: '35vh', // Fixed height for scroll wheel effect
       overflowY: 'auto',
       padding: '1rem',
       display: 'flex',

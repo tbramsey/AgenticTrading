@@ -19,7 +19,10 @@ interface NormalizedData {
 }
 
 const PortfolioTreemap: React.FC<PortfolioTreemapProps> = ({ showChart = false }) => {
-  const [data, setData] = useState<PortfolioItem[]>([]);
+  const [data, setData] = useState(() => {
+    const saved = sessionStorage.getItem("portfolioData");
+    return saved ? JSON.parse(saved) : [];
+  });
   const [diversification, setDiversification] = useState<number>(5);
   const [maxRisk, setMaxRisk] = useState<number>(50);
   const [sectors, setSectors] = useState<string[]>([
@@ -43,21 +46,17 @@ const PortfolioTreemap: React.FC<PortfolioTreemapProps> = ({ showChart = false }
       );
       const portfolio: PortfolioItem[] = await res.json();
       setData(portfolio);
-      window.dispatchEvent(new Event("portfolioUpdated"));
 
-
-      try {
-        window.dispatchEvent(new Event("portfolioUpdated"));
-      } catch {
-        // ignore in environments without window
-      }
+      sessionStorage.setItem("portfolioData", JSON.stringify(portfolio));
     } catch (err) {
       console.error("Error fetching portfolio:", err);
     }
   };
 
   useEffect(() => {
-    fetchPortfolio(diversification, maxRisk, sectors);
+    if (data.length === 0) {
+      fetchPortfolio(diversification, maxRisk, sectors);
+    }
   }, []);
 
   const handleApply = (newDiver: number, newRisk: number, sectors: string[]) => {

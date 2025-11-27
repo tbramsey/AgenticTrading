@@ -1,11 +1,11 @@
-// pages/StocksPage.js
+// pages/PortfolioPage.js
 import React from "react";
 import PortfolioTreemap from "../../components/PortfolioTreemap";
 import PriceChart from "../../components/PriceChart";
 import LaunchButton from "../../components/LaunchButton";
 import News from "../../components/News";
 
-export function StocksPage() {
+export function PortfolioPage() {
   return (
     <div 
       style={{ 
@@ -30,14 +30,14 @@ export function StocksPage() {
         </div>
 
         {/* News Section - Takes remaining vertical space */}
-        <div style={{ flex: 1, overflowY: "auto" }}>
+        <div style={{ flex: 1, overflowY: "auto"}}>
           <News />
         </div>
       </div>
 
       {/* Right Side: Treemap & Buttons (Takes 40% of space) */}
       {/* CHANGED: Removed fixed 800px width, using flex ratio instead */}
-      <div style={{ flex: "6", display: "flex", flexDirection: "column", gap: "20px", height: "60vh" }}>
+      <div style={{ flex: "6", display: "flex", flexDirection: "column", gap: "20px", height: "80vh" }}>
         
         {/* Treemap container taking most of the right column */}
         <div style={{ flex: 1, width: "100%", minHeight: 0 }}>
@@ -50,4 +50,4 @@ export function StocksPage() {
     </div>
   );
 }
-export default StocksPage;
+export default PortfolioPage;

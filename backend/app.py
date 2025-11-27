@@ -22,6 +22,11 @@ CORS(app)
 
 current_portfolio = None
 
+@app.route("/fetch-portfolio")
+def fetch_portfolio():
+    current_portfolio = load_portfolio()
+    return jsonify(current_portfolio)
+
 @app.route("/portfolio")
 def get_portfolio():
     global current_portfolio
