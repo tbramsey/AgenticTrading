@@ -50,6 +50,8 @@ class TradingAgent:
 
         init_state = self.propagater.initialize(ticker, trade_date)
 
+        full_analysis = {}
+
         for analyst in self.selected_analysts:
             analyst_creator = analyst_types.get(analyst)
             if analyst_creator:
@@ -57,8 +59,11 @@ class TradingAgent:
                 agent = analyst_creator(self.deep_thinking_llm)
                 report = agent(init_state)
                 init_state[f"{analyst}_report"] = report
+                full_analysis[analyst] = report["report"]
 
-        for analyst in self.selected_analysts:
-            print(f"{analyst.capitalize()} Report:")
-            print(init_state[f"{analyst}_report"]["report"])
-            print("\n" + "="*50 + "\n")
+        # Combine all reports into one string for the frontend
+        combined_report = "\n\n".join(
+            [f"{analyst.capitalize()} Report:\n{rep}" for analyst, rep in full_analysis.items()]
+        )
+
+        return combined_report

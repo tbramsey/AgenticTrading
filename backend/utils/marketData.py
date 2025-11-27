@@ -192,6 +192,78 @@ def fetch_with_alpaca(symbol, timeframe=None):
             "volume": getattr(b, "v", None),
         }
 
+import os
+import requests
+import certifi
+
+def safe_float(x):
+    try:
+        return float(x)
+    except (TypeError, ValueError):
+        return None
+
+def fetch_income_statement_yoy(symbol):
+    key = os.getenv("ALPHA_VANTAGE_API_KEY_2")
+    if not key:
+        raise RuntimeError("No Alpha Vantage API key provided.")
+
+    url = f"https://www.alphavantage.co/query?function=INCOME_STATEMENT&symbol={symbol}&apikey={key}"
+    resp = requests.get(url, timeout=10, verify=certifi.where())
+    resp.raise_for_status()
+    data = resp.json()
+
+    reports = data.get("annualReports")
+    if not reports or len(reports) < 2:
+        raise RuntimeError("Insufficient annual reports to calculate growth.")
+
+    # Sort reports by fiscalDateEnding descending
+    reports.sort(key=lambda r: r.get("fiscalDateEnding", ""), reverse=True)
+
+    latest = reports[0]
+    prev_latest = reports[1]
+    oldest_index = min(9, len(reports)-1)
+    oldest = reports[oldest_index]
+    prev_oldest = reports[oldest_index + 1] if oldest_index + 1 < len(reports) else None
+
+    def calc_yoy(new, old):
+        new, old = safe_float(new), safe_float(old)
+        if not new or not old or old == 0:
+            return None
+        return (new - old) / old * 100
+
+    metrics = {
+        "symbol": symbol,
+        "latest_fiscal_date": latest["fiscalDateEnding"],
+        "previous_fiscal_date": prev_latest["fiscalDateEnding"],
+        "latest_revenue": safe_float(latest.get("totalRevenue")),
+        "previous_revenue": safe_float(prev_latest.get("totalRevenue")),
+        "latest_net_income": safe_float(latest.get("netIncome")),
+        "previous_net_income": safe_float(prev_latest.get("netIncome")),
+        "latest_gross_profit": safe_float(latest.get("grossProfit")),
+        "previous_gross_profit": safe_float(prev_latest.get("grossProfit")),
+        "latest_revenue_growth_%": calc_yoy(latest.get("totalRevenue"), prev_latest.get("totalRevenue")),
+        "latest_net_income_growth_%": calc_yoy(latest.get("netIncome"), prev_latest.get("netIncome")),
+        "latest_gross_profit_growth_%": calc_yoy(latest.get("grossProfit"), prev_latest.get("grossProfit")),
+    }
+
+    # 10-year-old report growth
+    old_metrics = {}
+    if prev_oldest:
+        old_metrics = {
+            "oldest_fiscal_date": oldest.get("fiscalDateEnding"),
+            "previous_oldest_fiscal_date": prev_oldest.get("fiscalDateEnding"),
+            "oldest_revenue": safe_float(oldest.get("totalRevenue")),
+            "previous_oldest_revenue": safe_float(prev_oldest.get("totalRevenue")),
+            "oldest_net_income": safe_float(oldest.get("netIncome")),
+            "previous_oldest_net_income": safe_float(prev_oldest.get("netIncome")),
+            "oldest_gross_profit": safe_float(oldest.get("grossProfit")),
+            "previous_oldest_gross_profit": safe_float(prev_oldest.get("grossProfit")),
+            "oldest_revenue_growth_%": calc_yoy(oldest.get("totalRevenue"), prev_oldest.get("totalRevenue")),
+            "oldest_net_income_growth_%": calc_yoy(oldest.get("netIncome"), prev_oldest.get("netIncome")),
+            "oldest_gross_profit_growth_%": calc_yoy(oldest.get("grossProfit"), prev_oldest.get("grossProfit")),
+        }
+
+    return metrics, old_metrics
 
 
 def fetch_with_alpha_vintage(symbol):
@@ -457,55 +529,98 @@ def get_data():
 
 
 if __name__ == "__main__":
-    marketData = pd.read_csv("../data/stock_data.csv")
-    tickers = marketData["symbol"].tolist()
+    INPUT_CSV = "../data/stock_data.csv"
+    OUTPUT_CSV_1 = "../data/stock_data_recent.csv"
+    OUTPUT_CSV_2 = "../data/stock_data_old.csv"
 
-    path = "../data/stockprices.csv"
+    # Read input CSV
+    market_data = pd.read_csv(INPUT_CSV)
 
-    if not os.path.exists(path) or os.path.getsize(path) == 0:
-        existing_df = pd.DataFrame()
-    else:
-        existing_df = pd.read_csv(path, parse_dates=["date"]).set_index("date")
+    # Select metadata columns to copy
+    metadata_cols = [
+        "symbol", "asset_type", "name", "description", "cik",
+        "exchange", "currency", "country", "sector", "industry",
+        "address", "official_site"
+    ]
 
-    for symbol in tickers[500:]:
-        if symbol in existing_df.columns:
-            print(f"Already have {symbol}, skipping.")
+    existing_symbols = set()
+    if os.path.exists(OUTPUT_CSV_1):
+        existing_symbols.update(pd.read_csv(OUTPUT_CSV_1)["symbol"].dropna().tolist())
+    output_exists_1 = os.path.exists(OUTPUT_CSV_1)
+    output_exists_2 = os.path.exists(OUTPUT_CSV_2)
+
+    for _, row in market_data.iterrows():
+        symbol = row["symbol"]
+        if symbol in existing_symbols:
+            print(f"Skipping {symbol}, already processed.")
             continue
 
         try:
-            df = fetch_stockprices_vintage(symbol)
-            df = df.set_index("date")[[symbol]]
-            print(f"Fetched {symbol}")
-
-            if existing_df.empty:
-                existing_df = df
-            else:
-                existing_df = existing_df.join(df, how="outer")
-
+            metrics, old_metrics = fetch_income_statement_yoy(symbol)
+            if old_metrics is None:
+                old_metrics = {}
         except Exception as e:
-            print(f"Failed to get price for {symbol}: {e}")
+            print(f"Failed to fetch data for {symbol}: {e}")
             break
 
-    existing_df["portfolio_value"] = existing_df.sum(axis=1)
-    existing_df.sort_index().to_csv(path)
+        # Latest year data
+        data_row_1 = {col: row.get(col) for col in metadata_cols}
+        data_row_1.update(metrics)
+        df_row_1 = pd.DataFrame([data_row_1])
 
-    # portfolio = [
-    #     ("AAPL", 0.4),
-    #     ("MSFT", 0.35),
-    #     ("GOOGL", 0.25)
-    # ]
+        # Old data, only if available
+        if old_metrics:
+            data_row_2 = {col: row.get(col) for col in metadata_cols}
+            data_row_2.update(old_metrics)
+            df_row_2 = pd.DataFrame([data_row_2])
 
-    # df = fetch_historical_stockprices(portfolio)
-    # print(df.head())
+        # Write to CSVs
+        if output_exists_1:
+            df_row_1.to_csv(OUTPUT_CSV_1, mode='a', header=False, index=False)
+        else:
+            df_row_1.to_csv(OUTPUT_CSV_1, mode='w', header=True, index=False)
+            output_exists_1 = True
 
-    # import matplotlib.pyplot as plt
-    # plt.figure(figsize=(10, 5))
-    # plt.plot(df["date"], df["portfolio_value"], label="Portfolio Value", color="blue")
-    # plt.title("Portfolio Historical Value")
-    # plt.xlabel("Date")
-    # plt.ylabel("Weighted Value")
-    # plt.legend()
-    # plt.grid(True)
-    # plt.show()
+        if old_metrics:
+            if output_exists_2:
+                df_row_2.to_csv(OUTPUT_CSV_2, mode='a', header=False, index=False)
+            else:
+                df_row_2.to_csv(OUTPUT_CSV_2, mode='w', header=True, index=False)
+                output_exists_2 = True
+
+        print(f"Processed {symbol}")
+
+    # marketData = pd.read_csv("../data/stock_data.csv")
+    # tickers = marketData["symbol"].tolist()
+
+    # path = "../data/stockprices.csv"
+
+    # if not os.path.exists(path) or os.path.getsize(path) == 0:
+    #     existing_df = pd.DataFrame()
+    # else:
+    #     existing_df = pd.read_csv(path, parse_dates=["date"]).set_index("date")
+
+    # for symbol in tickers[500:]:
+    #     if symbol in existing_df.columns:
+    #         print(f"Already have {symbol}, skipping.")
+    #         continue
+
+    #     try:
+    #         df = fetch_stockprices_vintage(symbol)
+    #         df = df.set_index("date")[[symbol]]
+    #         print(f"Fetched {symbol}")
+
+    #         if existing_df.empty:
+    #             existing_df = df
+    #         else:
+    #             existing_df = existing_df.join(df, how="outer")
+
+    #     except Exception as e:
+    #         print(f"Failed to get price for {symbol}: {e}")
+    #         break
+
+    # existing_df["portfolio_value"] = existing_df.sum(axis=1)
+    # existing_df.sort_index().to_csv(path)
+
 
     
