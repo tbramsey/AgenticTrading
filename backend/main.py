@@ -1,6 +1,6 @@
 from sympy import Ge
 from langchain_ollama import ChatOllama
-from agents.workflow.trading_agent import TradingAgent
+from tradingagent.workflow.trading_agent import TradingAgent
 import os, json
 from dotenv import load_dotenv
 load_dotenv()
