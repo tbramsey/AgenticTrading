@@ -4,6 +4,8 @@ from alpaca.trading.client import TradingClient
 from alpaca.trading.requests import MarketOrderRequest
 from alpaca.trading.enums import OrderSide, TimeInForce, QueryOrderStatus, OrderType, OrderClass
 from alpaca.trading.requests import GetOrdersRequest
+from alpaca.data.historical import StockHistoricalDataClient
+from alpaca.data.requests import StockLatestQuoteRequest
 
 # Load environment variables
 load_dotenv()
@@ -68,12 +70,12 @@ def get_open_orders():
         return {"error": str(e)}
 
 
-def place_market_order(symbol: str, qty: int, side: str):
+def place_market_order(symbol: str, amount: int, side: str):
     """Place a market buy/sell order."""
     try:
         order_data = MarketOrderRequest(
             symbol=symbol,
-            qty=qty,
+            qty=amount, #qty #notional
             side=OrderSide.BUY if side.lower() == "buy" else OrderSide.SELL,
             time_in_force=TimeInForce.GTC
         )
@@ -81,6 +83,31 @@ def place_market_order(symbol: str, qty: int, side: str):
         return {"id": order.id, "symbol": order.symbol, "status": order.status}
     except Exception as e:
         return {"error": str(e)}
+    
+def create_portfolio(portfolio, initial_investment):
+    data_client = StockHistoricalDataClient(API_KEY, API_SECRET)
+
+    for symbol, weight, _ in portfolio:
+        req = StockLatestQuoteRequest(symbol_or_symbols=[symbol])
+        quote = data_client.get_stock_latest_quote(req)
+
+        ask = quote[symbol].ask_price or 0
+        bid = quote[symbol].bid_price or 0
+        current_price = (ask + bid) / 2 if (ask and bid) else ask or bid
+
+        if not current_price:
+            print(f"Skipping {symbol} — invalid quote data.")
+            continue
+
+        amount = (float(weight) / 100) * initial_investment
+        qty = int(amount // current_price)
+
+        if qty <= 0:
+            print(f"Skipping {symbol} — not enough for one share at ${current_price:.2f}")
+            continue
+
+        print(f"Buying {qty} shares of {symbol} at ${current_price:.2f} (~${amount:.2f})")
+        place_market_order(symbol, qty, "buy")
 
 
 def cancel_all_orders():
@@ -90,3 +117,14 @@ def cancel_all_orders():
         return {"message": "All open orders canceled."}
     except Exception as e:
         return {"error": str(e)}
+
+if __name__ == "__main__":
+    portfolio = [
+        ("AAPL", 25.0, "Tech"),
+        ("MSFT", 30.0, "Tech"),
+        ("GOOG", 45.0, "Tech"),
+    ]
+    #create_portfolio(portfolio, 10000)
+    print(cancel_all_orders())
+    #print(place_market_order("AAPL", 1, "buy"))
+    #print(get_account_info())

@@ -106,7 +106,7 @@ const PortfolioTreemap: React.FC<PortfolioTreemapProps> = ({ showChart = false }
   };
 
   return (
-    <div style={{ width: "600px", height: "300px", border: "none", margin: 0, padding: 0 }}>
+    <div style={{ width: "100%", height: "100%", border: "none", margin: 0, padding: 0 }}>
       <div style={{ position: "relative", width: "100%", height: "10%" }}>
         <SettingsButton
           onApply={handleApply}

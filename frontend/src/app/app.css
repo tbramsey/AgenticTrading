@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  width: 100vh;
+  overflow-x: hidden; /* Prevents horizontal scrollbar if width > 100% */
+}
+
 :root { /* Main styling */
   --green1: #7c844f;
   --green2: #a5bf7b;
