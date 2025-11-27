@@ -78,7 +78,7 @@ def launch_portfolio():
 
 
 from langchain_google_genai import ChatGoogleGenerativeAI
-from agents.workflow.trading_agent import TradingAgent
+from tradingagent.workflow.trading_agent import TradingAgent
 
 model = ChatGoogleGenerativeAI(
     model="models/gemini-2.5-flash-lite",
