@@ -4,6 +4,7 @@ import Dashboard from "@/pages/dashboard"
 import AuthPage from "@/pages/authPage"
 import ChatBot from "@/pages/chatBot"
 import Education from "@/pages/educationPage"
+import Portfolio from "@/pages/portfolioPage"
 
 export default function AppRoutes() {
   return (
@@ -22,6 +23,10 @@ export default function AppRoutes() {
 
       <Route element={<RootLayout />}>
         <Route path="/learn" element={<Education />} />
+      </Route>
+
+      <Route element={<RootLayout />}>
+        <Route path="/portfolio" element={<Portfolio />} />
       </Route>
 
       {/* Catch-all 404 */}

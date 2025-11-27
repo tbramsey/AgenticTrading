@@ -1,4 +1,4 @@
-import { Book, Home, Inbox, Moon, Search, Settings, Sun, MessageSquareText } from "lucide-react"
+import { Book, Home, Inbox, Moon, Search, Settings, Sun, MessageSquareText, ChartCandlestick } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import {
@@ -21,6 +21,11 @@ const items = [
     title: "Dashboard",
     url: "/",
     icon: Home,
+  },
+  {
+    title: "Portfolio",
+    url: "portfolio",
+    icon: ChartCandlestick,
   },
   {
     title: "Analyze",

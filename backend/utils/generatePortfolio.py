@@ -1,9 +1,10 @@
-import pandas as pd
-from sympy import div, im, sec
-from dotenv import load_dotenv
-import requests
 import os
+from pathlib import Path
+
 import numpy as np
+import pandas as pd
+from dotenv import load_dotenv
+from sympy import div, im, sec
 
 load_dotenv()
 
@@ -109,7 +110,9 @@ def make_portfolio(diversification, max_risk, sectors):
 
     portfolio = []
 
-    stock_df = pd.read_csv("backend/data/stock_data.csv")
+    base_dir = Path(__file__).resolve().parent.parent
+    stock_data_path = base_dir / "data" / "stock_data.csv"
+    stock_df = pd.read_csv(stock_data_path)
 
     stock_df[["roiScore", "riskScore"]] = stock_df.apply(score_stock, axis=1)
     stock_df = stock_df[stock_df["riskScore"] < max_risk]
@@ -129,7 +132,12 @@ def make_portfolio(diversification, max_risk, sectors):
     return portfolio
 
 def fetch_stockprices(portfolio, startdate):
-    df = pd.read_csv("backend/data/stockprices.csv")
+    if not portfolio:
+        raise ValueError("Portfolio is empty; generate a portfolio before requesting prices.")
+
+    base_dir = Path(__file__).resolve().parent.parent
+    prices_path = base_dir / "data" / "stockprices.csv"
+    df = pd.read_csv(prices_path)
 
     # Ensure 'date' column is parsed and set as index
     if 'date' in df.columns:
