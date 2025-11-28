@@ -33,6 +33,14 @@ interface PortfolioLineChartProps {
   style?: React.CSSProperties;
 }
 
+const MOCK_POINTS: Point[] = [
+  { date: "2024-01-01", portfolio_value: 0 },
+  { date: "2025-03-01", portfolio_value: 100 },
+  { date: "2026-06-01", portfolio_value: 300 },
+  { date: "2027-09-01", portfolio_value: 700},
+  { date: "2028-12-01", portfolio_value: 2000 },
+];
+
 export default function PortfolioLineChart({ className, style }: PortfolioLineChartProps) {
   const [dataPoints, setDataPoints] = useState<Point[]>([]);
   const [startDate, setStartDate] = useState<string>("2024-11-01");
@@ -45,13 +53,17 @@ export default function PortfolioLineChart({ className, style }: PortfolioLineCh
       .then((res) => res.json())
       .then((json) => {
         if (Array.isArray(json)) {
+          console.log("Fetched portfolio/current data:", json);
           setDataPoints(json);
         } else {
           console.error("Invalid portfolio/current response:", json);
-          setDataPoints([]);
+          setDataPoints(MOCK_POINTS);
         }
       })
-      .catch((err) => console.error(err))
+      .catch((err) => {
+        console.error(err);
+        setDataPoints(MOCK_POINTS);
+      })
       .finally(() => setIsLoading(false));
   }, []);
 

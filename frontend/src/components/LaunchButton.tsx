@@ -25,7 +25,11 @@ const LaunchButton: React.FC = () => {
       if (res.ok) {
         setStatus("✅ Portfolio launched successfully");
       } else {
-        setStatus(`❌ Error: ${data.error}`);
+        const message =
+          res.status === 404
+            ? "Generate a portfolio in settings first."
+            : data?.error || "Unexpected launch error.";
+        setStatus(`❌ Error: ${message}`);
       }
     } catch (err) {
       setStatus("❌ Failed to connect to backend");

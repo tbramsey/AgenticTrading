@@ -43,6 +43,7 @@ const SettingsButton: React.FC<SettingsButtonProps> = ({
   const [tempDiver, setTempDiver] = useState<number>(defaultDiver);
   const [tempSectors, setTempSectors] = useState<string[]>([...defaultSectors]);
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
   const handleSectorChange = (sector: string) => {
     setTempSectors((prev) =>
@@ -51,8 +52,12 @@ const SettingsButton: React.FC<SettingsButtonProps> = ({
   };
 
   const handleApply = () => {
+    setIsGenerating(true);
     onApply(tempDiver, tempRisk, tempSectors);
-    setIsOpen(false);
+    setTimeout(() => {
+      setIsGenerating(false);
+      setIsOpen(false);
+    }, 300);
   };
 
   return (
@@ -141,16 +146,20 @@ const SettingsButton: React.FC<SettingsButtonProps> = ({
         </div>
 
         <SheetFooter>
-          <div className="flex w-full gap-3">
+          <div className="flex w-full flex-col gap-2">
+            <Button
+              className="w-full"
+              onClick={handleApply}
+              disabled={isGenerating}
+            >
+              {isGenerating ? "Generating…" : "Generate portfolio"}
+            </Button>
             <Button
               variant="outline"
               className="w-full"
               onClick={() => setIsOpen(false)}
             >
               Cancel
-            </Button>
-            <Button className="w-full" onClick={handleApply}>
-              Apply changes
             </Button>
           </div>
         </SheetFooter>

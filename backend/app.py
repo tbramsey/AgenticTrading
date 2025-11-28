@@ -73,6 +73,7 @@ def analyze_stock():
         return jsonify({"error": str(e)}), 500
 
 def save_portfolio(p):
+    print("Saving portfolio to current_portfolio.json")
     with open("current_portfolio.json", "w") as f:
         json.dump(p, f)
 
@@ -128,14 +129,14 @@ def get_current_portfolio():
     if current_portfolio is None:
         return jsonify({"error": "No portfolio generated yet"}), 404
 
-    # mock_data = [
-    #     {"date": "2025-10-01", "portfolio_value": 100000},
-    #     {"date": "2025-10-08", "portfolio_value": 101200},
-    #     {"date": "2025-10-15", "portfolio_value": 99500},
-    #     {"date": "2025-10-22", "portfolio_value": 102300},
-    #     {"date": "2025-10-29", "portfolio_value": 103000},
-    # ]
-    # return jsonify(mock_data)
+    mock_data = [
+        {"date": "2025-10-01", "portfolio_value": 100000},
+        {"date": "2025-10-08", "portfolio_value": 101200},
+        {"date": "2025-10-15", "portfolio_value": 99500},
+        {"date": "2025-10-22", "portfolio_value": 102300},
+        {"date": "2025-10-29", "portfolio_value": 103000},
+    ]
+    return jsonify(mock_data)
     startdate = request.args.get("startdate", "2015-11-01")
     try:
         df = fetch_stockprices(current_portfolio, startdate)

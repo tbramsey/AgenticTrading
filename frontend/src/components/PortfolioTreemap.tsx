@@ -21,10 +21,22 @@ interface NormalizedData {
   description: string;
 }
 
+const MOCK_PORTFOLIO: PortfolioItem[] = [
+  { symbol: "AAPL", weight: 20, description: "Apple Inc." },
+  { symbol: "MSFT", weight: 18, description: "Microsoft Corp." },
+  { symbol: "GOOG", weight: 15, description: "Alphabet Inc." },
+  { symbol: "AMZN", weight: 12, description: "Amazon.com Inc." },
+  { symbol: "NVDA", weight: 10, description: "NVIDIA Corp." },
+  { symbol: "JPM", weight: 8, description: "JPMorgan Chase" },
+  { symbol: "UNH", weight: 7, description: "UnitedHealth Group" },
+  { symbol: "XOM", weight: 5, description: "Exxon Mobil Corp." },
+  { symbol: "HD", weight: 5, description: "Home Depot Inc." },
+];
+
 const PortfolioTreemap: React.FC = () => {
   const [data, setData] = useState(() => {
     const saved = sessionStorage.getItem("portfolioData");
-    return saved ? JSON.parse(saved) : [];
+    return saved ? JSON.parse(saved) : MOCK_PORTFOLIO;
   });
   const [diversification, setDiversification] = useState<number>(5);
   const [maxRisk, setMaxRisk] = useState<number>(50);
@@ -45,14 +57,22 @@ const PortfolioTreemap: React.FC = () => {
   const fetchPortfolio = async (div: number, risk: number, sectors: string[]) => {
     try {
       const res = await fetch(
-        `http://127.0.0.1:5000/portfolio?diversification=${div}&max_risk=${risk}&sectors=${sectors.join(",")}`
+         `http://127.0.0.1:5000/portfolio?diversification=${div}&max_risk=${risk}&sectors=${sectors.join(",")}`
       );
       const portfolio: PortfolioItem[] = await res.json();
-      setData(portfolio);
-
-      sessionStorage.setItem("portfolioData", JSON.stringify(portfolio));
+      console.log("Params:", { div, risk, sectors });
+      console.log("Fetched portfolio:", portfolio);
+      if (Array.isArray(portfolio) && portfolio.length > 0) {
+        setData(portfolio);
+        sessionStorage.setItem("portfolioData", JSON.stringify(portfolio));
+      } else {
+        setData(MOCK_PORTFOLIO);
+        sessionStorage.setItem("portfolioData", JSON.stringify(MOCK_PORTFOLIO));
+      }
     } catch (err) {
       console.error("Error fetching portfolio:", err);
+      setData(MOCK_PORTFOLIO);
+      sessionStorage.setItem("portfolioData", JSON.stringify(MOCK_PORTFOLIO));
     }
   };
 
@@ -63,6 +83,7 @@ const PortfolioTreemap: React.FC = () => {
   }, []);
 
   const handleApply = (newDiver: number, newRisk: number, sectors: string[]) => {
+    console.log("Applying new settings:", newDiver, newRisk, sectors);
     setDiversification(newDiver);
     setMaxRisk(newRisk);
     setSectors(sectors);
