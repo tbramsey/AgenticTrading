@@ -146,8 +146,8 @@ export default function PortfolioLineChart({ className, style }: PortfolioLineCh
     >
       <CardHeader className="flex flex-col gap-2 border-b border-border/70 pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-semibold">
-            Portfolio performance
+          <CardTitle className="text-base font-semibold pr-2">
+            Portfolio performance 
           </CardTitle>
           <span
             className={cn(
