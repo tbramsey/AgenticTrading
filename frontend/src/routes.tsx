@@ -5,6 +5,7 @@ import AuthPage from "@/pages/authPage"
 import ChatBot from "@/pages/chatBot"
 import Education from "@/pages/educationPage"
 import Portfolio from "@/pages/portfolioPage"
+import IntroPage from "@/pages/introduction"
 
 export default function AppRoutes() {
   return (
@@ -12,9 +13,11 @@ export default function AppRoutes() {
       {/* Public route (no sidebar) */}
       <Route path="/auth" element={<AuthPage />} />
 
+      <Route path="/" element={<IntroPage />} />
+
       {/* Routes wrapped in the sidebar layout */}
       <Route element={<RootLayout />}>
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/dashboard" element={<Dashboard />} />
       </Route>
 
       <Route element={<RootLayout />}>

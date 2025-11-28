@@ -1,5 +1,6 @@
 import { Book, Home, Inbox, Moon, Search, Settings, Sun, MessageSquareText, ChartCandlestick } from "lucide-react"
 import { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
 
 import {
   Sidebar,
@@ -19,17 +20,17 @@ import { type Theme, initTheme, toggleThemePreference } from "@/lib/theme"
 const items = [
   {
     title: "Dashboard",
-    url: "/",
+    url: "/dashboard",
     icon: Home,
   },
   {
     title: "Portfolio",
-    url: "portfolio",
+    url: "/portfolio",
     icon: ChartCandlestick,
   },
   {
     title: "Analyze",
-    url: "chat",
+    url: "/chat",
     icon: MessageSquareText,
   },
   {
@@ -41,11 +42,6 @@ const items = [
     title: "Learn",
     url: "learn",
     icon: Book,
-  },
-  {
-    title: "Settings",
-    url: "#",
-    icon: Settings,
   },
 ]
 
@@ -61,67 +57,72 @@ export function AppSidebar() {
     setTheme((prev) => toggleThemePreference(prev))
   }
 
+  const SidebarSection = ({ label, children }: { label: string; children: React.ReactNode }) => (
+    <SidebarGroup>
+      <SidebarGroupLabel>{label}</SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>{children}</SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  )
+
   return (
     <Sidebar variant="floating" collapsible="icon">
       <SidebarContent>
         <SidebarHeader>
           <SidebarGroupContent>
             <SidebarMenu>
-              {
-                <SidebarMenuItem key={"Logo"}>
-                  <SidebarMenuButton asChild>
-                    <a href={"/"}>
-                      <img src="/vite.svg" className="w-7 h-7" />
-                      <span>{"Barry"}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              }
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarHeader>
-        <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>Appearance</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
+              <SidebarMenuItem key="logo">
                 <SidebarMenuButton asChild>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-2"
-                    onClick={handleToggleTheme}
-                  >
-                    {theme === "dark" ? <Moon className="size-4" /> : <Sun className="size-4" />}
-                    <span>{theme === "dark" ? "Dark mode" : "Light mode"}</span>
-                  </Button>
+                  <Link to="/dashboard">
+                    <img src="/vite.svg" className="w-7 h-7" />
+                    <span>Barry</span>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
-        </SidebarGroup>
+        </SidebarHeader>
+
+        <SidebarSection label="Application">
+          {items.map((item) => (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton asChild>
+                <Link to={item.url}>
+                  <item.icon />
+                  <span>{item.title}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarSection>
+
+        <SidebarSection label="Appearance">
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2"
+                onClick={handleToggleTheme}
+              >
+                {theme === "dark" ? <Moon className="size-4" /> : <Sun className="size-4" />}
+                <span>{theme === "dark" ? "Dark mode" : "Light mode"}</span>
+              </Button>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarSection>
+
+        <SidebarSection label="Miscellaneous">
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link to="#">
+                <Settings />
+                <span>Settings</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarSection>
       </SidebarContent>
     </Sidebar>
   )
 }
-
-          // <div className="flex items-center gap-2 p-2">
-          //   <img src="/vite.svg" className="w-7 h-7" />
-          //   <span className="font-semibold text-lg">Barry</span>
-          // </div>
