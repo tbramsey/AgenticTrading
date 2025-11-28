@@ -24,6 +24,7 @@ const ARTICLES: Article[] = [
     summary: "Position sizing, stop-loss placement, and why risk per trade matters more than win rate.",
     imageLabel: "Risk controls",
     tags: ["risk", "discipline"],
+    href: "/learn/risk-basics",
   },
   {
     id: "earnings-season",
@@ -31,6 +32,7 @@ const ARTICLES: Article[] = [
     summary: "How to prep for earnings: consensus, implied moves, scenarios, and post-print follow-through.",
     imageLabel: "Earnings prep",
     tags: ["events", "equities"],
+    href: "/learn/earnings-season",
   },
   {
     id: "macro-signals",
@@ -38,6 +40,7 @@ const ARTICLES: Article[] = [
     summary: "Rates, curves, inflation, and liquidity—what they hint about equity and FX regimes.",
     imageLabel: "Macro trends",
     tags: ["macro", "strategy"],
+    href: "/learn/macro-signals",
   },
   {
     id: "options-starters",
@@ -45,6 +48,7 @@ const ARTICLES: Article[] = [
     summary: "A gentle ramp into calls, puts, breakevens, and the Greeks you actually watch.",
     imageLabel: "Options 101",
     tags: ["options", "basics"],
+    href: "/learn/options-starters",
   },
 ]
 

@@ -20,18 +20,35 @@ if not API_KEY or not API_SECRET:
 
 trading_client = TradingClient(API_KEY, API_SECRET, paper=PAPER)
 
+
+def _to_float(value):
+    try:
+        return float(value)
+    except Exception:
+        return None
+
 # ---------- Core Functions ---------- #
 
 def get_account_info():
     """Fetch basic account information."""
     try:
         account = trading_client.get_account()
-        #print(account)
+        equity = _to_float(account.equity)
+        last_equity = _to_float(getattr(account, "last_equity", None))
+        portfolio_value = _to_float(getattr(account, "portfolio_value", None)) or equity
+        day_pnl = None
+        if equity is not None and last_equity is not None:
+            day_pnl = equity - last_equity
+
         return {
             "id": account.id,
             "status": account.status,
-            "equity": account.equity,
-            "buying_power": account.buying_power
+            "equity": equity,
+            "last_equity": last_equity,
+            "portfolio_value": portfolio_value,
+            "buying_power": _to_float(account.buying_power),
+            "cash": _to_float(getattr(account, "cash", None)),
+            "day_pnl": day_pnl,
         }
     except Exception as e:
         return {"error": str(e)}

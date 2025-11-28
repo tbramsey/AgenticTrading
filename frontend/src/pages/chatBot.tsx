@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react"
+import { useLocation } from "react-router-dom"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import {
@@ -38,6 +39,7 @@ type ReportPanelData = {
 }
 
 export default function Chat() {
+  const location = useLocation()
   const [messages, setMessages] = useState(() => {
     const cached = window.localStorage.getItem(STORAGE_KEY)
     if (cached) {
@@ -165,16 +167,17 @@ export default function Chat() {
     ])
   }
 
-  async function sendMessage() {
-    if (!input.trim()) return
+  async function sendMessage(promptOverride?: string) {
+    const text = (promptOverride ?? input).trim()
+    if (!text) return
 
-    const msg = { sender: "user", text: input }
+    const msg = { sender: "user", text }
     const nextMessages = [...messages, msg]
     setMessages(nextMessages)
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextMessages))
     setIsLoading(true)
     setIsReportOpen(false)
-    window.localStorage.setItem(STORAGE_PENDING_KEY, JSON.stringify({ prompt: input }))
+    window.localStorage.setItem(STORAGE_PENDING_KEY, JSON.stringify({ prompt: text }))
 
     try {
       const response = await fetch(`${API_BASE_URL}/analyze`, {
@@ -182,7 +185,7 @@ export default function Chat() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message: input })
+        body: JSON.stringify({ message: text })
       })
 
       const data = await response.json()
@@ -250,6 +253,17 @@ export default function Chat() {
       mountedRef.current = false
     }
   }, [])
+
+  // Accept prompt from query string (e.g., /chat?prompt=...)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const prompt = params.get("prompt")
+    if (prompt && prompt.trim()) {
+      setInput(prompt)
+      // slight async to allow state to set before sending
+      setTimeout(() => sendMessage(prompt), 0)
+    }
+  }, [location.search])
 
   return (
     <div className="relative flex flex-col h-[calc(100vh-64px)] w-full overflow-hidden bg-background text-foreground">

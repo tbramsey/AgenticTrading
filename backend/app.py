@@ -4,6 +4,8 @@ from utils.generatePortfolio import make_portfolio, fetch_stockprices
 from utils.alpaca_utils import create_portfolio
 from main import classify_ticker
 from tradingagent.workflow.trading_agent import TradingAgent
+from tradingagent.dataflows.marketaux_utils import get_general_news
+from utils.alpaca_utils import get_account_info
 import json, os
 from datetime import datetime
 from typing import Iterable, List, Tuple, Any
@@ -164,6 +166,51 @@ def launch_portfolio():
         return jsonify({"status": "success"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/news/trending")
+def trending_news():
+    """Provide a generic trending news feed (no ticker filter)."""
+    limit = request.args.get("limit", default=5, type=int)
+    articles = get_general_news(limit=limit)
+
+    # Normalize/simplify fields for the frontend
+    normalized = []
+    for a in articles:
+        normalized.append(
+            {
+                "title": a.get("title") or a.get("headline"),
+                "source": a.get("source") or a.get("entities", [{}])[0].get("name") if a.get("entities") else "MarketAux",
+                "published_at": a.get("published_at") or a.get("published_on"),
+                "url": a.get("url"),
+            }
+        )
+
+    # Fallback stub if API is unavailable or empty
+    if not normalized:
+        normalized = [
+            {
+                "title": "Markets rally as CPI cools",
+                "source": "Mock Feed",
+                "published_at": "Just now",
+                "url": "",
+            },
+            {
+                "title": "AI chip demand outpaces forecasts",
+                "source": "Mock Feed",
+                "published_at": "Today",
+                "url": "",
+            },
+        ]
+
+    return jsonify(normalized)
+
+
+@app.route("/brokerage/account")
+def brokerage_account():
+    """Expose Alpaca account snapshot for the dashboard."""
+    info = get_account_info()
+    return jsonify(info)
 
 if __name__ == "__main__":
     app.run(port=5000)

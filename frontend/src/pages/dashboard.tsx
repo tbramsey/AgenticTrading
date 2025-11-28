@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { ArrowUpRight, BookOpen, DollarSign, MessageSquare, Newspaper, TrendingUp } from "lucide-react"
+import { ArrowUpRight, BookOpen, MessageSquare, Newspaper, TrendingUp } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -28,23 +28,87 @@ const lesson = {
   cta: "Continue in Education",
 }
 
-const brokerage = {
-  buyingPower: "$24,500",
-  holdings: "$182,300",
-  invested: "$157,800",
-  cash: "$24,500",
-  dayPnl: "+$1,240 ( +0.68% )",
+type BrokerageSnapshot = {
+  buying_power?: number | null
+  equity?: number | null
+  portfolio_value?: number | null
+  cash?: number | null
+  day_pnl?: number | null
+}
+
+const brokerageFallback: BrokerageSnapshot = {
+  buying_power: 24500,
+  equity: 182300,
+  portfolio_value: 182300,
+  cash: 24500,
+  day_pnl: 1240,
 }
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const [chatDraft, setChatDraft] = useState("")
+  const [newsItems, setNewsItems] = useState(mockNews)
+  const [isLoadingNews, setIsLoadingNews] = useState(false)
+  const [brokerageData, setBrokerageData] = useState<BrokerageSnapshot>(brokerageFallback)
+  const [isLoadingBrokerage, setIsLoadingBrokerage] = useState(false)
 
   const navigateToChat = () => {
     const query = chatDraft.trim()
     const url = query ? `/chat?prompt=${encodeURIComponent(query)}` : "/chat"
     navigate(url)
   }
+
+  useEffect(() => {
+    setIsLoadingNews(true)
+    fetch("http://127.0.0.1:5000/news/trending?limit=5")
+      .then((res) => res.json())
+      .then((json) => {
+        if (Array.isArray(json)) {
+          setNewsItems(
+            json.map((item: any) => ({
+              title: item.title,
+              source: item.source || "MarketAux",
+              time: item.published_at || item.time || "",
+              url: item.url || "",
+            }))
+          )
+        } else {
+          setNewsItems(mockNews)
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load news:", err)
+        setNewsItems(mockNews)
+      })
+      .finally(() => setIsLoadingNews(false))
+  }, [])
+
+  useEffect(() => {
+    setIsLoadingBrokerage(true)
+    fetch("http://127.0.0.1:5000/brokerage/account")
+      .then((res) => res.json())
+      .then((json) => {
+        if (!json || json.error) {
+          setBrokerageData(brokerageFallback)
+          return
+        }
+        setBrokerageData({
+          buying_power: json.buying_power ?? brokerageFallback.buying_power,
+          equity: json.equity ?? brokerageFallback.equity,
+          portfolio_value: json.portfolio_value ?? json.equity ?? brokerageFallback.portfolio_value,
+          cash: json.cash ?? brokerageFallback.cash,
+          day_pnl: json.day_pnl ?? brokerageFallback.day_pnl,
+        })
+      })
+      .catch((err) => {
+        console.error("Failed to load brokerage info:", err)
+        setBrokerageData(brokerageFallback)
+      })
+      .finally(() => setIsLoadingBrokerage(false))
+  }, [])
+
+  const formatCurrency = (value?: number | null) =>
+    typeof value === "number" ? value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }) : "—"
 
   const stockRows = useMemo(
     () =>
@@ -108,31 +172,57 @@ export default function Dashboard() {
         <Card className="border-border/70 bg-card/80 backdrop-blur">
           <CardHeader>
             <CardTitle>Brokerage Account</CardTitle>
-            <CardDescription>Snapshot of balances (placeholder)</CardDescription>
+            <CardDescription>Snapshot of balances</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-lg border border-border/60 bg-muted/40 p-3">
                 <div className="text-xs text-muted-foreground">Buying power</div>
-                <div className="text-lg font-semibold">{brokerage.buyingPower}</div>
+                <div className="text-lg font-semibold">
+                  {isLoadingBrokerage ? "…" : formatCurrency(brokerageData.buying_power)}
+                </div>
               </div>
               <div className="rounded-lg border border-border/60 bg-muted/40 p-3">
-                <div className="text-xs text-muted-foreground">Holdings balance</div>
-                <div className="text-lg font-semibold">{brokerage.holdings}</div>
+                <div className="text-xs text-muted-foreground">Holdings (equity)</div>
+                <div className="text-lg font-semibold">
+                  {isLoadingBrokerage ? "…" : formatCurrency(brokerageData.equity)}
+                </div>
               </div>
               <div className="rounded-lg border border-border/60 bg-muted/40 p-3">
                 <div className="text-xs text-muted-foreground">Invested</div>
-                <div className="text-lg font-semibold">{brokerage.invested}</div>
+                <div className="text-lg font-semibold">
+                  {isLoadingBrokerage ? "…" : formatCurrency(brokerageData.portfolio_value)}
+                </div>
               </div>
               <div className="rounded-lg border border-border/60 bg-muted/40 p-3">
                 <div className="text-xs text-muted-foreground">Cash</div>
-                <div className="text-lg font-semibold">{brokerage.cash}</div>
+                <div className="text-lg font-semibold">
+                  {isLoadingBrokerage ? "…" : formatCurrency(brokerageData.cash)}
+                </div>
               </div>
             </div>
             <Separator />
-            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-emerald-50/70 px-4 py-3 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+            <div
+              className={`flex items-center justify-between rounded-lg border border-border/60 px-4 py-3 ${
+                isLoadingBrokerage
+                  ? "bg-muted/40 text-muted-foreground"
+                  : typeof brokerageData.day_pnl === "number" && brokerageData.day_pnl < 0
+                    ? "bg-rose-50/80 text-rose-700 dark:bg-rose-950/40 dark:text-rose-200"
+                    : "bg-emerald-50/70 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"
+              }`}
+            >
               <span className="text-sm font-semibold">Day P&amp;L</span>
-              <span className="text-sm font-semibold">{brokerage.dayPnl}</span>
+              <span className="text-sm font-semibold">
+                {isLoadingBrokerage
+                  ? "…"
+                  : typeof brokerageData.day_pnl === "number"
+                    ? `${brokerageData.day_pnl >= 0 ? "+" : ""}${brokerageData.day_pnl.toLocaleString("en-US", {
+                        style: "currency",
+                        currency: "USD",
+                        maximumFractionDigits: 0,
+                      })}`
+                    : "—"}
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -142,10 +232,10 @@ export default function Dashboard() {
         <Card className="border-border/70 bg-card/80 backdrop-blur">
           <CardHeader>
             <CardTitle>Trending News</CardTitle>
-            <CardDescription>Recent headlines (mock feed)</CardDescription>
+            <CardDescription>Recent headlines</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {mockNews.map((item) => (
+            {newsItems.map((item) => (
               <div
                 key={item.title}
                 className="flex items-start justify-between rounded-lg border border-border/60 bg-muted/40 p-3"
@@ -153,11 +243,24 @@ export default function Dashboard() {
                 <div className="space-y-1">
                   <div className="text-sm font-semibold">{item.title}</div>
                   <div className="text-xs text-muted-foreground">
-                    {item.source} • {item.time}
+                    {item.source}
+                    {item.time ? ` • ${item.time}` : ""}
                   </div>
                 </div>
-                <Button variant="ghost" size="icon-sm" className="text-muted-foreground">
-                  <ArrowUpRight className="size-4" />
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-muted-foreground"
+                  asChild
+                  disabled={!item.url}
+                >
+                  <a href={item.url || "#"} target="_blank" rel="noreferrer">
+                    {isLoadingNews ? (
+                      <span className="text-[10px]">…</span>
+                    ) : (
+                      <ArrowUpRight className="size-4" />
+                    )}
+                  </a>
                 </Button>
               </div>
             ))}

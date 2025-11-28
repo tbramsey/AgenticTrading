@@ -118,3 +118,51 @@ def get_market_trends(date: str) -> Optional[List[Dict]]:
     
     except requests.exceptions.RequestException as e:
         print(f"(Massive) Error fetching news for date {date}: {e}")
+
+
+def get_top_movers(direction: str = "gainers") -> Optional[List[Dict]]:
+    """
+    Fetch top stock movers (gainers or losers) for US market.
+
+    Args:
+        direction (str): Either "gainers" or "losers"
+
+    Returns:
+        Optional[List[Dict]]: List of top movers with ticker and change data
+    """
+    if direction.lower() not in ["gainers", "losers"]:
+        raise ValueError("Direction must be 'gainers' or 'losers'")
+
+    params = {
+        "apiKey": mass_api_key
+    }
+
+    try:
+        response = requests.get(f"{url}/snapshot/locale/us/markets/stocks/{direction.lower()}", params=params)
+        response.raise_for_status()
+        data = response.json()
+        
+        if "results" in data:
+            movers = data.get("results", [])
+            return movers
+        else:
+            print(f"Unexpected response format: {data}")
+            return None
+    
+    except requests.exceptions.RequestException as e:
+        print(f"(Massive) Error fetching top {direction}: {e}")
+        return None
+
+
+if __name__ == "__main__":
+    print("Testing get_stock_news...")
+    news = get_stock_news("AAPL", "2024-01-15")
+    print(f"News results: {news}\n")
+    
+    print("Testing get_market_trends...")
+    trends = get_market_trends("2024-01-15")
+    print(f"Market trends: {trends}\n")
+    
+    print("Testing get_top_movers...")
+    gainers = get_top_movers("gainers")
+    print(f"Top gainers: {gainers}")
