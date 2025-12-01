@@ -1,7 +1,10 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from utils.generatePortfolio import make_portfolio, fetch_stockprices
+from utils.generatePortfolio import make_portfolio, fetch_stockprices, fetch_change
 from utils.alpaca_utils import create_portfolio
+from langchain_google_genai import ChatGoogleGenerativeAI
+from tradingagent.workflow.trading_agent import TradingAgent
+from datetime import datetime
 import json, os
 from dotenv import load_dotenv
 
@@ -12,10 +15,13 @@ def save_portfolio(p):
         json.dump(p, f)
 
 def load_portfolio():
-    if os.path.exists("current_portfolio.json"):
-        with open("current_portfolio.json", "r") as f:
+    path = "current_portfolio.json"
+
+    if os.path.exists(path):
+        with open(path, "r") as f:
             return json.load(f)
-    return None
+    return []
+
 
 app = Flask(__name__)
 CORS(app)
@@ -25,7 +31,58 @@ current_portfolio = None
 @app.route("/fetch-portfolio")
 def fetch_portfolio():
     current_portfolio = load_portfolio()
-    return jsonify(current_portfolio)
+    return jsonify(fetch_change(current_portfolio))
+
+@app.route("/sectors")
+def get_sectors():
+    # Ensure jsonify is available even if not imported globally
+    from flask import jsonify
+    
+    try:
+        # Verify load_portfolio exists before calling it to avoid hard crashes
+        if 'load_portfolio' not in globals():
+            return jsonify({"error": "load_portfolio function is missing on server"}), 500
+
+        current_portfolio = load_portfolio()
+        
+        # Data structure: List of tuples
+        # (symbol, weight, description, sector)
+        
+        sector_totals = {}
+
+        for row in current_portfolio:
+            try:
+                # Ensure row has enough elements
+                if len(row) < 4:
+                    continue
+                    
+                # Extract data safely
+                weight = float(row[1]) # weight is at index 1
+                sector = row[3]       # sector is at index 3
+                
+                if not sector:
+                    sector = "Unclassified"
+
+                sector_totals[sector] = sector_totals.get(sector, 0) + weight
+
+            except (IndexError, ValueError) as e:
+                print(f"Skipping row due to error: {e}")
+                continue
+
+        response_data = []
+        for sector, total_weight in sector_totals.items():
+            response_data.append({
+                "name": sector,
+                "value": round(total_weight, 2)
+            })
+        
+        return jsonify(response_data)
+
+    except Exception as e:
+        # Log the actual error to the server console
+        print(f"CRITICAL ERROR in /sectors: {e}")
+        # Return a simple JSON error that won't crash the frontend
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/portfolio")
 def get_portfolio():
@@ -81,10 +138,6 @@ def launch_portfolio():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-from langchain_google_genai import ChatGoogleGenerativeAI
-from tradingagent.workflow.trading_agent import TradingAgent
-
 model = ChatGoogleGenerativeAI(
     model="models/gemini-2.5-flash-lite",
     temperature=0.2,
@@ -129,20 +182,46 @@ def classify_endpoint():
     ticker = classify_ticker(message)
     return jsonify({"ticker": ticker})
 
-
+# Endpoint for chatBot to analyze a stock
 @app.route("/analyze", methods=["POST"])
-def analyze_endpoint():
-    data = request.get_json()
-    ticker = data.get("ticker")
-    date = data.get("date", "2025-10-20")
+def analyze_stock():
+    """Endpoint for chatBot to analyze a stock"""
+    print("Received /analyze request")
 
-    if not ticker:
-        return jsonify({"error": "ticker required"}), 400
+    try:
+        data = request.get_json()
+        ticker = data.get("ticker")
+        date = data.get("date", "2025-10-20")
 
-    agent = TradingAgent()
-    result = agent.analyze_stock(ticker, date)
+        if not ticker:
+            return jsonify({"error": "ticker required"}), 400
 
-    return jsonify({"analysis": result})
+        print(f"Analyzing {ticker}...")
+        agent = TradingAgent()
+        report = agent.analyze_stock(ticker, datetime.now().strftime("%Y-%m-%d"))
+        
+        report_payload = {
+            "ticker": report.ticker,
+            "trade_date": report.trade_date,
+            "final_trade_decision": report.get_trade_decision(),
+            "risk_report": report.get_risk_report(),
+            "debate_report": report.get_debate_report(),
+            "analytics": report.get_analytics(),
+            "formatted_data": report.get_formatted_data(),
+        }
+
+        return jsonify({
+            "response": f"Analysis complete for {ticker}.",
+            "ticker": ticker,
+            "analysis": report_payload.get("final_trade_decision"),
+            "report": report_payload,
+            "stock_report": report_payload,
+        })
+        
+    
+    except Exception as e:
+        print(f"Error in /analyze: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/")
