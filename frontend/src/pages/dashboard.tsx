@@ -22,10 +22,11 @@ const mockNews = [
 ]
 
 const lesson = {
-  title: "How to size positions with Kelly Criterion",
+  title: "Risk management fundamentals",
   summary:
-    "A practical guide to balancing upside with drawdown control using fractional Kelly sizing and volatility caps.",
-  cta: "Continue in Education",
+    "Position sizing, stop-loss placement, and why risk per trade matters more than win rate.",
+  cta: "Read the article",
+  href: "/learn/risk-basics",
 }
 
 type BrokerageSnapshot = {
@@ -271,7 +272,7 @@ export default function Dashboard() {
           <Card className="border-border/70 bg-card/80 backdrop-blur">
             <CardHeader>
               <CardTitle>Lesson of the day</CardTitle>
-              <CardDescription>From Education (placeholder)</CardDescription>
+              <CardDescription>From Education</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-start gap-3">
@@ -283,7 +284,11 @@ export default function Dashboard() {
                   <div className="text-xs text-muted-foreground">{lesson.summary}</div>
                 </div>
               </div>
-              <Button variant="outline" className="w-fit gap-2" onClick={() => navigate("/learn")}>
+              <Button
+                variant="outline"
+                className="w-fit gap-2"
+                onClick={() => navigate(lesson.href)}
+              >
                 {lesson.cta}
                 <ArrowUpRight className="size-4" />
               </Button>
