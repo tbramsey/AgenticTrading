@@ -6,9 +6,11 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { PageLayout } from "../../components/NavBar";
 
 // 2. Import your pages
-import DashboardPage from "./Dashboard";
+import AboutPage from "./about";
 import PortfolioPage from "./PortfolioPage";
 import ChatPage from "./trading";
+import DashboardPage from "./dashboard";
+import MarketOverview from "./MarketOveriew";
 
 export default function AppRouter() {
   return (
@@ -19,15 +21,16 @@ export default function AppRouter() {
       */}
       <PageLayout>
         <Routes>
-          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/about" element={<AboutPage />} />
           
           {/* Note: Make sure the 'to' links in NavBar.js match these paths */}
+          <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/stock-analysis" element={<ChatPage />} /> 
-          <Route path="/market" element={<ChatPage />} />
+          <Route path="/market" element={<MarketOverview />} />
           <Route path="/portfolio" element={<PortfolioPage />} />
           
           {/* Default redirect */}
-          <Route path="/" element={<DashboardPage />} />
+          <Route path="/" element={<AboutPage />} />
         </Routes>
       </PageLayout>
     </Router>

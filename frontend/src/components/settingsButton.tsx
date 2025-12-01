@@ -51,6 +51,7 @@ const SettingsButton: React.FC<SettingsButtonProps> = ({
   const handleApply = () => {
     onApply(tempDiver, tempRisk, tempSectors);
     setIsOpen(false);
+    window.dispatchEvent(new Event("portfolioUpdated"));
   };
 
   // --- Icons ---

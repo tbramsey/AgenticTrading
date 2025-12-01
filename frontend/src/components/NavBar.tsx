@@ -70,6 +70,9 @@ const NavBar = () => {
   };
 
   const Icons = {
+    About: ({ color }) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><circle cx="12" cy="8" r="1"></circle></svg>
+    ),
     Dashboard: ({ color }) => (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
     ),
@@ -101,20 +104,20 @@ const NavBar = () => {
       </div>
 
       <div style={styles.navLinksContainer}>
+        <NavLink to="/about" style={getLinkStyle}>
+          {({ isActive }) => (
+            <>
+              <Icons.About color={isActive ? colors.textActive : colors.textInactive} />
+              <span>About</span>
+            </>
+          )}
+        </NavLink>
+
         <NavLink to="/dashboard" style={getLinkStyle}>
           {({ isActive }) => (
             <>
               <Icons.Dashboard color={isActive ? colors.textActive : colors.textInactive} />
               <span>Dashboard</span>
-            </>
-          )}
-        </NavLink>
-
-        <NavLink to="/stock-analysis" style={getLinkStyle}>
-          {({ isActive }) => (
-            <>
-              <Icons.Analysis color={isActive ? colors.textActive : colors.textInactive} />
-              <span>Stock Analysis</span>
             </>
           )}
         </NavLink>
@@ -133,6 +136,15 @@ const NavBar = () => {
             <>
               <Icons.Portfolio color={isActive ? colors.textActive : colors.textInactive} />
               <span>Portfolio</span>
+            </>
+          )}
+        </NavLink>
+
+        <NavLink to="/stock-analysis" style={getLinkStyle}>
+          {({ isActive }) => (
+            <>
+              <Icons.Analysis color={isActive ? colors.textActive : colors.textInactive} />
+              <span>Stock Analysis</span>
             </>
           )}
         </NavLink>

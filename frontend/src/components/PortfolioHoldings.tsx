@@ -122,20 +122,17 @@ const PortfolioTicker = () => {
 
         const processedData = rawData.map((item) => {
             const ticker = item[0];
-            const shares = item[1];
-            const fullDesc = item[2];
+            const price = item[1];
+            const change = item[2];
 
             // Mock Data
-            const mockPrice = (Math.random() * 150) + 50; 
-            const mockChange = (Math.random() * 10) - 4; 
+            //const mockPrice = (Math.random() * 150) + 50; 
+            //const mockChange = (Math.random() * 10) - 4; 
             
             return {
                 ticker: ticker,
-                shares: shares,
-                name: fullDesc.split(',')[0].split('(')[0] || "Unknown",
-                price: mockPrice,
-                change: mockChange,
-                total: mockPrice * shares
+                price: price,
+                change: change,
             };
         });
 

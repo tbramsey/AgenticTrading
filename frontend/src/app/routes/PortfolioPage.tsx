@@ -3,7 +3,7 @@ import React from "react";
 import PortfolioTreemap from "../../components/PortfolioTreemap";
 import PriceChart from "../../components/PriceChart";
 import LaunchButton from "../../components/LaunchButton";
-import News from "../../components/News";
+import SectorChart from "../../components/SectorChart";
 
 export function PortfolioPage() {
   return (
@@ -21,17 +21,17 @@ export function PortfolioPage() {
     >
       
       {/* Left Side: Main Content (Takes 60% of space) */}
-      <div style={{ flex: "4", display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div style={{ flex: "4", display: "flex", flexDirection: "column", minWidth: 0, height: "90vh" }}>
         
         {/* Chart Section - CHANGED: Removed fixed 500px width */}
-        <div style={{ height: "40%", width: "100%", marginBottom: "20px" }}>
+        <div style={{ height: "30vh", width: "100%", marginBottom: "20px", marginTop: "60px" }}>
           {/* Ensure your <PriceChart /> inside handles width="100%" */}
           <PriceChart />
         </div>
 
         {/* News Section - Takes remaining vertical space */}
         <div style={{ flex: 1, overflowY: "auto"}}>
-          <News />
+          <SectorChart />
         </div>
       </div>
 
