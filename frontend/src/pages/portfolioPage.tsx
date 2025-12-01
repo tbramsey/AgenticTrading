@@ -3,6 +3,7 @@ import React from "react";
 import PortfolioTreemap from "@/components/PortfolioTreemap";
 import PriceChart from "@/components/PriceChart";
 import LaunchButton from "@/components/LaunchButton";
+import SectorChart from "@/components/SectorChart";
 
 export function PortfolioPage() {
   return (
@@ -17,8 +18,9 @@ export function PortfolioPage() {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.15fr_0.9fr]">
         <PriceChart className="h-full" />
 
-        <div className="grid grid-rows-[minmax(360px,1fr)_auto] gap-6">
+        <div className="grid grid-rows-[minmax(360px,1fr)_minmax(320px,1fr)_auto] gap-6">
           <PortfolioTreemap />
+          <SectorChart />
           <LaunchButton />
         </div>
       </div>

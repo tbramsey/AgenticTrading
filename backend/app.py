@@ -116,9 +116,7 @@ def get_portfolio():
     sectors = request.args.getlist("sectors")
     if len(sectors) == 1 and "," in sectors[0]:
         sectors = [s.strip() for s in sectors[0].split(",") if s.strip()]
-    current_portfolio = normalize_portfolio(
-        make_portfolio(diversification, max_risk, sectors)
-    )
+    current_portfolio = make_portfolio(diversification, max_risk, sectors)
     save_portfolio(current_portfolio)
     return jsonify(current_portfolio)
 
@@ -127,8 +125,6 @@ def get_current_portfolio():
     global current_portfolio
     if current_portfolio is None:
         current_portfolio = load_portfolio()
-        if current_portfolio:
-            current_portfolio = normalize_portfolio(current_portfolio)
     if current_portfolio is None:
         return jsonify({"error": "No portfolio generated yet"}), 404
 
@@ -157,8 +153,6 @@ def launch_portfolio():
     global current_portfolio
     if current_portfolio is None:
         current_portfolio = load_portfolio()
-        if current_portfolio:
-            current_portfolio = normalize_portfolio(current_portfolio)
     if current_portfolio is None:
         return jsonify({"error": "No portfolio generated yet"}), 404
     
@@ -167,6 +161,66 @@ def launch_portfolio():
         return jsonify({"status": "success"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@app.route("/sectors")
+def get_sectors():
+    # Ensure jsonify is available even if not imported globally
+    
+    try:
+        # Verify load_portfolio exists before calling it to avoid hard crashes
+        if 'load_portfolio' not in globals():
+            return jsonify({"error": "load_portfolio function is missing on server"}), 500
+
+        current_portfolio = load_portfolio() or []
+        
+        # Data structure: List of tuples
+        # (symbol, weight, description, sector)
+        
+        sector_totals = {}
+
+        for row in current_portfolio:
+            try:
+                print(f"Processing row: {row}")
+
+                weight = 0.0
+                sector = None
+
+                if isinstance(row, dict):
+                    weight = float(row.get("weight", 0.0))
+                    sector = row.get("sector") or row.get("industry")
+                elif isinstance(row, (list, tuple)):
+                    if len(row) >= 2:
+                        weight = float(row[1])
+                    if len(row) >= 4:
+                        sector = row[3]
+                else:
+                    continue
+
+                if weight == 0:
+                    continue
+
+                sector = sector or "Unclassified"
+                sector_totals[sector] = sector_totals.get(sector, 0.0) + weight
+
+            except (IndexError, ValueError) as e:
+                print(f"Skipping row due to error: {e}")
+                continue
+
+        response_data = []
+        for sector, total_weight in sector_totals.items():
+            response_data.append({
+                "name": sector,
+                "value": round(total_weight, 2)
+            })
+        
+        return jsonify(response_data)
+
+    except Exception as e:
+        # Log the actual error to the server console
+        print(f"CRITICAL ERROR in /sectors: {e}")
+        # Return a simple JSON error that won't crash the frontend
+        return jsonify({"error": str(e)}), 500
+
 
 
 @app.route("/news/trending")

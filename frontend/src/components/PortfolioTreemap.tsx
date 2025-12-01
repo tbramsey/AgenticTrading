@@ -69,10 +69,14 @@ const PortfolioTreemap: React.FC = () => {
         setData(MOCK_PORTFOLIO);
         sessionStorage.setItem("portfolioData", JSON.stringify(MOCK_PORTFOLIO));
       }
+
+      window.dispatchEvent(new Event("portfolioUpdated"));
     } catch (err) {
       console.error("Error fetching portfolio:", err);
       setData(MOCK_PORTFOLIO);
       sessionStorage.setItem("portfolioData", JSON.stringify(MOCK_PORTFOLIO));
+
+      window.dispatchEvent(new Event("portfolioUpdated"));
     }
   };
 

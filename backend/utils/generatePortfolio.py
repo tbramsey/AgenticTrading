@@ -9,6 +9,26 @@ from sklearn.model_selection import train_test_split
 
 load_dotenv()
 
+def fetch_change(portfolio):
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(BASE_DIR, "../data/stock_data.csv")
+
+    df = pd.read_csv(file_path)
+
+    result = []
+
+    for symbol, *_ in portfolio:
+        row = df[df["symbol"] == symbol]
+
+        if not row.empty:
+            price = float(row.iloc[0]["price"])
+            change = float(row.iloc[0]["change"])
+
+            result.append([symbol, price, change])
+
+    return result
+
+
 def learn_roi_weights(market_data, price_data):
     rows = []
 
@@ -95,7 +115,7 @@ def learn_roi_weights(market_data, price_data):
         else:
             sentiment_score = 50  # neutral if missing
 
-        # print("sentiment_score: ", sentiment_score)
+        #print("sentiment_score: ", sentiment_score)
 
         # --- Range Score ---
         if fifty_two_week_high > 0 and fifty_two_week_low > 0:
@@ -104,7 +124,7 @@ def learn_roi_weights(market_data, price_data):
         else:
             range_score = 50
 
-        # print("range_score:", range_score)
+        #print("range_score:", range_score)
 
         # --- Trend Score ---
         if fifty_day_ma > 0 and two_hundred_day_ma > 0:
@@ -113,7 +133,7 @@ def learn_roi_weights(market_data, price_data):
         else:
             trend_score = 50
 
-        # print("trend_score:", trend_score)
+        #print("trend_score:", trend_score)
 
 
         rows.append({
@@ -206,7 +226,7 @@ def score_stock(info):
     else:
         sentiment_score = 50  # neutral if missing
 
-    # print("sentiment_score: ", sentiment_score)
+    print("sentiment_score: ", sentiment_score)
 
     # --- Range Score ---
     if fifty_two_week_high > 0 and fifty_two_week_low > 0:
@@ -215,7 +235,7 @@ def score_stock(info):
     else:
         range_score = 50
 
-    # print("range_score:", range_score)
+    print("range_score:", range_score)
 
     # --- Trend Score ---
     if fifty_day_ma > 0 and two_hundred_day_ma > 0:
@@ -224,7 +244,7 @@ def score_stock(info):
     else:
         trend_score = 50
 
-    # print("trend_score:", trend_score)
+    print("trend_score:", trend_score)
 
 
     # Weighted average
@@ -267,11 +287,8 @@ def make_portfolio(diversification, max_risk, sectors):
 
     portfolio = []
 
-    file_path = os.path.join(os.path.dirname(__file__), "../data/stock_data.csv")
-    
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"The file {file_path} does not exist.")
-    
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(BASE_DIR, "../data/stock_data.csv")
     stock_df = pd.read_csv(file_path)
     #stock_df = pd.read_csv("backend/data/stock_data.csv")
 
@@ -286,7 +303,7 @@ def make_portfolio(diversification, max_risk, sectors):
     for (row, weight) in zip(stock_df.head(num_stocks).itertuples(), weights):
         weight = int(weight)
         print(f"{row.symbol}: {row.roiScore}, Weight: {weight}%")
-        portfolio.append((row.symbol, weight, row.description))
+        portfolio.append((row.symbol, weight, row.description, row.sector))
     
     #print(stock_df["sector"].unique())
 
@@ -295,40 +312,32 @@ def make_portfolio(diversification, max_risk, sectors):
 def fetch_stockprices(portfolio, startdate):
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     file_path = os.path.join(BASE_DIR, "../data/stockprices.csv")
+
     df = pd.read_csv(file_path)
-    #df = pd.read_csv("backend/data/stockprices.csv")
 
-    # Ensure 'date' column is parsed and set as index
-    if 'date' in df.columns:
-        df['date'] = pd.to_datetime(df['date'])
-        df = df.set_index('date')
+    df['date'] = pd.to_datetime(df['date'])
+    df = df.set_index('date')
 
-    # Trim data to start from 2015
     df = df[df.index >= pd.Timestamp(startdate)]
 
-    # Initialize portfolio value column
     df["portfolio_value"] = 0.0
 
-    initial_investment = 100
-
-    for symbol, weight, _ in portfolio:
+    for symbol, weight, *_ in portfolio:
         if symbol not in df.columns:
-            print(f"Warning: {symbol} not found in data, skipping.")
+            print(f"Missing: {symbol}")
             continue
 
-        allocation = (weight / 100) * initial_investment
-        first_price = df[symbol].dropna().iloc[0] if not df[symbol].dropna().empty else None
-
-        if first_price is None or first_price == 0:
-            print(f"Warning: No valid price data for {symbol}, skipping.")
+        prices = df[symbol].dropna()
+        if prices.empty:
             continue
 
-        shares = allocation / first_price
-        df[f"{symbol}_shares"] = shares
-        df["portfolio_value"] += df[symbol] * shares
+        first_price = prices.iloc[0]
+        current_price = prices.iloc[-1]
 
-    df["portfolio_value"] = ((df["portfolio_value"] - initial_investment) / initial_investment) * 100
+        df["portfolio_value"] += (((df[symbol] - first_price) / first_price) * weight)
+
     return df.reset_index()
+
 
 # if __name__ == "__main__":
 #     INPUT_CSV = "../data/stock_data.csv"
