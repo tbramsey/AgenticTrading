@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button"
+import { Link } from "react-router-dom"
 import {
   Card,
   CardContent,
@@ -90,7 +91,7 @@ export default function Education() {
             </CardContent>
             <CardFooter>
               <Button asChild className="w-full">
-                <a href={article.href ?? "#"}>Read more</a>
+                <Link to={article.href ?? "#"}>Read more</Link>
               </Button>
             </CardFooter>
           </Card>

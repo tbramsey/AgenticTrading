@@ -7,6 +7,7 @@ import Education from "@/pages/educationPage"
 import Portfolio from "@/pages/portfolioPage"
 import IntroPage from "@/pages/introduction"
 import ArticlePage from "@/pages/article"
+import StockSearchPage from "@/pages/stockSearch"
 
 export default function AppRoutes() {
   return (
@@ -19,6 +20,11 @@ export default function AppRoutes() {
       {/* Routes wrapped in the sidebar layout */}
       <Route element={<RootLayout />}>
         <Route path="/dashboard" element={<Dashboard />} />
+      </Route>
+
+      <Route element={<RootLayout />}>
+        <Route path="/search" element={<StockSearchPage />} />
+        <Route path="/search/:ticker" element={<StockSearchPage />} />
       </Route>
 
       <Route element={<RootLayout />}>

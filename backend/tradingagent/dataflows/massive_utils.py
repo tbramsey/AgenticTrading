@@ -9,7 +9,8 @@ mass_api_key = os.getenv("MASSIVE_API_KEY")
 if not mass_api_key:
     raise ValueError("MASSIVE_API_KEY not found in environment variables")
 
-url = "https://api.massive.com/v2"
+url_v2 = "https://api.massive.com/v2"
+url_v3 = "https://api.massive.com/v3"
 
 def get_stock_news(ticker: str, trade_date: str):
     """
@@ -28,7 +29,7 @@ def get_stock_news(ticker: str, trade_date: str):
 
     # Massive News API Call
     try:
-        response = requests.get(f"{url}/reference/news", params=params)
+        response = requests.get(f"{url_v2}/reference/news", params=params)
         response.raise_for_status()
         data = response.json()
         
@@ -106,7 +107,7 @@ def get_market_trends(date: str) -> Optional[List[Dict]]:
 
     # Massive News API Call
     try:
-        response = requests.get(f"{url}/aggs/grouped/locale/us/market/stocks/{date}", params=params)
+        response = requests.get(f"{url_v2}/aggs/grouped/locale/us/market/stocks/{date}", params=params)
         response.raise_for_status()
         data = response.json()
         
@@ -138,7 +139,7 @@ def get_top_movers(direction: str = "gainers") -> Optional[List[Dict]]:
     }
 
     try:
-        response = requests.get(f"{url}/snapshot/locale/us/markets/stocks/{direction.lower()}", params=params)
+        response = requests.get(f"{url_v2}/snapshot/locale/us/markets/stocks/{direction.lower()}", params=params)
         response.raise_for_status()
         data = response.json()
         
@@ -154,6 +155,34 @@ def get_top_movers(direction: str = "gainers") -> Optional[List[Dict]]:
         return None
 
 
+def get_ticker_details(ticker: str) -> Optional[Dict]:
+    """
+    Fetch detailed reference data for a single ticker from the Massive v3 API.
+
+    Args:
+        ticker (str): Stock ticker symbol (e.g., 'AAPL').
+
+    Returns:
+        Optional[Dict]: Reference details for the ticker or None on failure.
+    """
+
+    params = {"apiKey": mass_api_key}
+
+    try:
+        response = requests.get(f"{url_v3}/reference/tickers/{ticker.upper()}", params=params)
+        response.raise_for_status()
+        data = response.json()
+
+        # v3 responses generally nest data under "results"
+        if isinstance(data, dict) and "results" in data:
+            return data.get("results")
+        return data
+
+    except requests.exceptions.RequestException as e:
+        print(f"(Massive) Error fetching reference data for {ticker}: {e}")
+        return None
+
+
 if __name__ == "__main__":
     print("Testing get_stock_news...")
     news = get_stock_news("AAPL", "2024-01-15")
@@ -166,3 +195,7 @@ if __name__ == "__main__":
     print("Testing get_top_movers...")
     gainers = get_top_movers("gainers")
     print(f"Top gainers: {gainers}")
+
+    print("Testing get_ticker_details...")
+    ticker_details = get_ticker_details("AAPL")
+    print(f"Ticker details: {ticker_details}")

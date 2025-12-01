@@ -5,6 +5,7 @@ from utils.alpaca_utils import create_portfolio
 from main import classify_ticker
 from tradingagent.workflow.trading_agent import TradingAgent
 from tradingagent.dataflows.marketaux_utils import get_general_news
+from tradingagent.dataflows import fetch_massive_ticker_details as get_stock_details
 from utils.alpaca_utils import get_account_info
 import json, os
 from datetime import datetime
@@ -211,6 +212,32 @@ def brokerage_account():
     """Expose Alpaca account snapshot for the dashboard."""
     info = get_account_info()
     return jsonify(info)
+
+
+@app.route("/search/<ticker>", methods=["GET", "OPTIONS"])
+def search_ticker(ticker: str):
+    """Proxy Massive reference lookup for a given ticker."""
+    if request.method == "OPTIONS":
+        return jsonify({"ok": True}), 200
+
+    normalized = (ticker or "").strip().upper()
+    if not normalized:
+        return jsonify({"error": "Ticker is required"}), 400
+
+    try:
+        details = get_stock_details(normalized)
+        if not details:
+            return jsonify({"error": f"No reference data found for {normalized}"}), 404
+
+        return jsonify(
+            {
+                "ticker": normalized,
+                "data": details,
+            }
+        )
+    except Exception as e:
+        print(f"Error in /search/{normalized}: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(port=5000)
