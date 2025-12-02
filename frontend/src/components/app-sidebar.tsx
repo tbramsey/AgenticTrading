@@ -34,11 +34,6 @@ const items = [
     icon: MessageSquareText,
   },
   {
-    title: "Search",
-    url: "/search",
-    icon: Search,
-  },
-  {
     title: "Learn",
     url: "learn",
     icon: Book,

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react"
-import { useParams } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import { Globe2, MapPin, Phone, RefreshCw, ShieldCheck, XCircle } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:5000"
@@ -75,6 +75,7 @@ function formatAddress(address?: Address) {
 
 export default function StockSearchPage() {
   const { ticker: tickerParam } = useParams<{ ticker?: string }>()
+  const navigate = useNavigate()
   const [details, setDetails] = useState<TickerDetails | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -109,6 +110,12 @@ export default function StockSearchPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleDeepAnalysis = () => {
+    const promptTicker = resolvedTicker || "this ticker"
+    const prompt = `Lets analyze ${promptTicker}`
+    navigate(`/chat?prompt=${encodeURIComponent(prompt)}`)
   }
 
   return (
@@ -177,6 +184,16 @@ export default function StockSearchPage() {
             ) : null}
           </div>
         </CardHeader>
+        <CardFooter className="flex justify-end border-t border-white/10 bg-white/5 px-6 py-4">
+          <Button
+            variant="secondary"
+            className="bg-white/10 text-slate-50 hover:bg-white/20"
+            onClick={handleDeepAnalysis}
+            disabled={!resolvedTicker}
+          >
+            Deep Analysis
+          </Button>
+        </CardFooter>
       </Card>
 
       {error ? (

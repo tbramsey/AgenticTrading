@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { ArrowUpRight, BookOpen, MessageSquare, Newspaper, TrendingUp } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 const mockStocks = [
   { symbol: "NVDA", name: "NVIDIA Corp", price: 928.12, change: 3.42 },
@@ -52,12 +59,27 @@ export default function Dashboard() {
   const [isLoadingNews, setIsLoadingNews] = useState(false)
   const [brokerageData, setBrokerageData] = useState<BrokerageSnapshot>(brokerageFallback)
   const [isLoadingBrokerage, setIsLoadingBrokerage] = useState(false)
+  const [movers, setMovers] = useState({
+    top_gainers: mockStocks,
+    top_losers: mockStocks,
+    most_actively_traded: mockStocks,
+  })
+  const [moversView, setMoversView] = useState<"top_gainers" | "top_losers" | "most_actively_traded">("top_gainers")
+  const [isLoadingMovers, setIsLoadingMovers] = useState(false)
 
   const navigateToChat = () => {
     const query = chatDraft.trim()
     const url = query ? `/chat?prompt=${encodeURIComponent(query)}` : "/chat"
     navigate(url)
   }
+
+  const handleStockClick = useCallback(
+    (ticker: string) => {
+      if (!ticker) return
+      navigate(`/search/${ticker}`)
+    },
+    [navigate]
+  )
 
   useEffect(() => {
     setIsLoadingNews(true)
@@ -108,39 +130,96 @@ export default function Dashboard() {
       .finally(() => setIsLoadingBrokerage(false))
   }, [])
 
+  useEffect(() => {
+    setIsLoadingMovers(true)
+    fetch("http://127.0.0.1:5000/market/top-movers")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json && (json.top_gainers || json.top_losers || json.most_actively_traded)) {
+          setMovers({
+            top_gainers: json.top_gainers ?? [],
+            top_losers: json.top_losers ?? [],
+            most_actively_traded: json.most_actively_traded ?? [],
+          })
+        } else {
+          setMovers({
+            top_gainers: mockStocks,
+            top_losers: mockStocks,
+            most_actively_traded: mockStocks,
+          })
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load top movers:", err)
+        setMovers({
+          top_gainers: mockStocks,
+          top_losers: mockStocks,
+          most_actively_traded: mockStocks,
+        })
+      })
+      .finally(() => setIsLoadingMovers(false))
+  }, [])
+
   const formatCurrency = (value?: number | null) =>
     typeof value === "number" ? value.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }) : "—"
 
-  const stockRows = useMemo(
-    () =>
-      mockStocks.map((stock) => {
-        const positive = stock.change >= 0
-        return (
-          <div
-            key={stock.symbol}
-            className="flex items-center justify-between rounded-lg border border-border/60 bg-card/50 px-4 py-3"
-          >
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold">{stock.symbol}</span>
-                <Badge variant="outline" className="text-[11px]">
-                  {stock.name}
-                </Badge>
-              </div>
-              <div className="text-xs text-muted-foreground">Mock signal</div>
+  const stockRows = useMemo(() => {
+    const activeList = movers[moversView] ?? []
+
+    if (!activeList.length) {
+      return (
+        <div className="rounded-lg border border-border/60 bg-muted/30 px-4 py-6 text-sm text-muted-foreground">
+          No data available. Try again shortly.
+        </div>
+      )
+    }
+
+    return activeList.map((stock: any) => {
+      const symbol = stock.symbol || stock.ticker || "N/A"
+      const name = stock.name || stock.ticker || symbol
+      const price = typeof stock.price === "number" ? stock.price : Number(stock.price)
+      const changePctRaw =
+        typeof stock.change_percentage === "string"
+          ? parseFloat(stock.change_percentage.replace("%", ""))
+          : typeof stock.change === "number"
+            ? stock.change
+            : typeof stock.change_percentage === "number"
+              ? stock.change_percentage
+              : 0
+      const positive = changePctRaw >= 0
+
+      return (
+        <div
+          key={`${symbol}-${name}`}
+          className="flex cursor-pointer items-center justify-between rounded-lg border border-border/60 bg-card/50 px-4 py-3 transition hover:border-primary/60 hover:bg-primary/5"
+          onClick={() => handleStockClick(symbol)}
+          role="button"
+          tabIndex={0}
+        >
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold">{symbol}</span>
+              <Badge variant="outline" className="text-[11px]">
+                {name}
+              </Badge>
             </div>
-            <div className="text-right">
-              <div className="text-base font-semibold">${stock.price.toFixed(2)}</div>
-              <div className={positive ? "text-emerald-500 text-xs" : "text-rose-500 text-xs"}>
-                {positive ? "+" : ""}
-                {stock.change.toFixed(2)}%
-              </div>
+            <div className="text-xs text-muted-foreground capitalize">
+              {moversView.replace(/_/g, " ")}
             </div>
           </div>
-        )
-      }),
-    []
-  )
+          <div className="text-right">
+            <div className="text-base font-semibold">
+              {isNaN(price) ? "—" : `$${price.toFixed(2)}`}
+            </div>
+            <div className={positive ? "text-emerald-500 text-xs" : "text-rose-500 text-xs"}>
+              {positive ? "+" : ""}
+              {changePctRaw.toFixed(2)}%
+            </div>
+          </div>
+        </div>
+      )
+    })
+  }, [movers, moversView, handleStockClick])
 
   return (
     <div className="flex flex-col gap-8 p-6">
@@ -157,17 +236,42 @@ export default function Dashboard() {
 
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <Card className="border-border/70 bg-card/80 backdrop-blur">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <CardTitle>Trending Stocks</CardTitle>
-              <CardDescription>Top movers Barry is watching (mock data)</CardDescription>
+              <CardDescription>Top movers from Alpha Vantage</CardDescription>
             </div>
-            <Badge variant="outline" className="gap-1">
-              <TrendingUp className="size-4" />
-              Momentum
-            </Badge>
+            <div className="flex flex-wrap items-center gap-3">
+              <Badge variant="outline" className="gap-1">
+                <TrendingUp className="size-4" />
+                Momentum
+              </Badge>
+              <Select
+                value={moversView}
+                onValueChange={(v: any) => setMoversView(v)}
+              >
+                <SelectTrigger className="min-w-[150px]">
+                  <SelectValue placeholder="View" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="top_gainers">Top Gainers</SelectItem>
+                  <SelectItem value="top_losers">Top Losers</SelectItem>
+                  <SelectItem value="most_actively_traded">Top Traded</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3">{stockRows}</CardContent>
+          <CardContent className="space-y-3">
+            <div className="max-h-[330px] space-y-3 overflow-y-auto pr-1">
+              {isLoadingMovers ? (
+                <div className="rounded-lg border border-border/60 bg-muted/30 px-4 py-6 text-sm text-muted-foreground">
+                  Loading movers…
+                </div>
+              ) : (
+                stockRows
+              )}
+            </div>
+          </CardContent>
         </Card>
 
         <Card className="border-border/70 bg-card/80 backdrop-blur">

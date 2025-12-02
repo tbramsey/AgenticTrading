@@ -6,6 +6,7 @@ from main import classify_ticker
 from tradingagent.workflow.trading_agent import TradingAgent
 from tradingagent.dataflows.marketaux_utils import get_general_news
 from tradingagent.dataflows import fetch_massive_ticker_details as get_stock_details
+from tradingagent.dataflows.alpha_utils import get_top_gainers_losers
 from utils.alpaca_utils import get_account_info
 import json, os
 from datetime import datetime
@@ -180,7 +181,7 @@ def get_sectors():
 
         for row in current_portfolio:
             try:
-                print(f"Processing row: {row}")
+                # print(f"Processing row: {row}")
 
                 weight = 0.0
                 sector = None
@@ -226,7 +227,7 @@ def get_sectors():
 @app.route("/news/trending")
 def trending_news():
     """Provide a generic trending news feed (no ticker filter)."""
-    limit = request.args.get("limit", default=5, type=int)
+    limit = request.args.get("limit", default=3, type=int)
     articles = get_general_news(limit=limit)
 
     # Normalize/simplify fields for the frontend
@@ -266,6 +267,52 @@ def brokerage_account():
     """Expose Alpaca account snapshot for the dashboard."""
     info = get_account_info()
     return jsonify(info)
+
+
+@app.route("/market/top-movers")
+def market_top_movers():
+    """
+    Provide top gainers, losers, and most actively traded equities via Alpha Vantage.
+    Returns a simplified payload for the dashboard.
+    """
+    try:
+        movers = get_top_gainers_losers()
+
+        def simplify(items):
+            cleaned = []
+            for item in items or []:
+                cleaned.append(
+                    {
+                        "ticker": item.get("ticker"),
+                        "price": item.get("price"),
+                        "change_amount": item.get("change_amount"),
+                        "change_percentage": item.get("change_percentage"),
+                        "volume": item.get("volume"),
+                    }
+                )
+            return cleaned
+
+        return jsonify(
+            {
+                "top_gainers": simplify(movers.get("top_gainers")),
+                "top_losers": simplify(movers.get("top_losers")),
+                "most_actively_traded": simplify(movers.get("most_actively_traded")),
+                "last_updated": movers.get("last_updated"),
+                "metadata": movers.get("metadata", {}),
+            }
+        )
+    except Exception as e:
+        print(f"Error in /market/top-movers: {e}")
+        return jsonify(
+            {
+                "top_gainers": [],
+                "top_losers": [],
+                "most_actively_traded": [],
+                "last_updated": None,
+                "metadata": {},
+                "error": "Unable to fetch market movers",
+            }
+        ), 500
 
 
 @app.route("/search/<ticker>", methods=["GET", "OPTIONS"])
