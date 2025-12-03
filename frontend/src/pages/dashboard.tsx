@@ -83,7 +83,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     setIsLoadingNews(true)
-    fetch("http://127.0.0.1:5000/news/trending?limit=5")
+    fetch("http://127.0.0.1:5000/news/trending?limit=3")
       .then((res) => res.json())
       .then((json) => {
         if (Array.isArray(json)) {

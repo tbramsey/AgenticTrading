@@ -1,4 +1,5 @@
 from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
 import os, json
 import pprint
 from dotenv import load_dotenv
@@ -63,7 +64,9 @@ class StockReport:
             '  "decision": Trading decision (BUY | SELL | HOLD),\n'
             '  "rationale": Explanation for the decision,\n'
             '  "risk_assessment": Summary of risk analysis,\n'
-            '  "investment_plan": Detailed investment plan if applicable\n'
+            '  "investment_plan": [\n'
+            '       {strategy : "strategy name here", description : "strategy description here" },\n'
+            '   ]\n'
             "}\n"
             "Ensure the JSON is properly formatted and return ONLY the JSON."
         )
@@ -96,7 +99,7 @@ class StockReport:
         except json.JSONDecodeError:
             return {"error": "Failed to parse JSON from response.", "raw_response": cleaned_content}
 
-
+use_openai = str(os.getenv("USE_OPENAI_MODEL", "false")).lower() == "true"
 
 class TradingAgent:
     def __init__(
@@ -104,18 +107,30 @@ class TradingAgent:
         selected_analysts=["market", "media", "news", "fundamentals"]
     ):
         
+        if use_openai:
+            openai_api_key = os.getenv("OPENAI_API_KEY")
+            self.deep_thinking_llm = ChatOpenAI(
+                model="o4-mini",
+                temperature=0.2,
+                api_key=openai_api_key,
+            )
+            self.quick_thinking_llm = ChatOpenAI(
+                model="gpt-4o-mini",
+                temperature=0.2,
+                api_key=openai_api_key,
+            )
+        else:
+            self.deep_thinking_llm = ChatGoogleGenerativeAI(
+                model="models/gemini-2.5-flash-lite",
+                temperature=0.2,
+                google_api_key=os.getenv("GEMINI_API_KEY")
+            )
 
-        self.deep_thinking_llm = ChatGoogleGenerativeAI(
-            model="models/gemini-2.5-flash-lite",
-            temperature=0.2,
-            google_api_key=os.getenv("GEMINI_API_KEY")
-        )
-
-        self.quick_thinking_llm = ChatGoogleGenerativeAI(
-            model="models/gemini-2.5-flash-lite",
-            temperature=0.2,
-            google_api_key=os.getenv("GEMINI_API_KEY")
-        )
+            self.quick_thinking_llm = ChatGoogleGenerativeAI(
+                model="models/gemini-2.5-flash-lite",
+                temperature=0.2,
+                google_api_key=os.getenv("GEMINI_API_KEY")
+            )
 
         self.propagater = Propagater()
 

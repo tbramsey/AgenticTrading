@@ -19,7 +19,7 @@ def _has_key() -> bool:
 def get_stock_news(
     ticker: Optional[str] = None,
     trade_date: Optional[str] = None,
-    limit: int = 5,
+    limit: int = 3,
 ) -> List[dict]:
     """
     Retrieve news articles (optionally filtered to a ticker) using the MarketAux API.
@@ -62,7 +62,7 @@ def get_stock_news(
         return []
 
 
-def get_general_news(limit: int = 5) -> List[dict]:
+def get_general_news(limit: int = 3) -> List[dict]:
     """Convenience wrapper to fetch general market news (no ticker required)."""
     today = datetime.utcnow().strftime("%Y-%m-%d")
     return get_stock_news(ticker=None, trade_date=today, limit=limit)

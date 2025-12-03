@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react"
-import { useLocation } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import {
@@ -13,10 +13,12 @@ import {
 
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import { toast } from "sonner"
 
 const API_BASE_URL = "http://127.0.0.1:5000"
 const STORAGE_KEY = "chatbot_messages"
 const STORAGE_PENDING_KEY = "chatbot_pending"
+const STORAGE_REPORT_KEY = "chatbot_report"
 
 type ReportEntry = {
   id: string
@@ -53,10 +55,22 @@ export default function Chat() {
   })
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(() => Boolean(window.localStorage.getItem(STORAGE_PENDING_KEY)))
-  const [reportPanel, setReportPanel] = useState<ReportPanelData>({ formattedData: null, formattedRaw: null, reports: [] })
+  const [reportPanel, setReportPanel] = useState<ReportPanelData>(() => {
+    const cached = window.localStorage.getItem(STORAGE_REPORT_KEY)
+    if (cached) {
+      try {
+        return JSON.parse(cached)
+      } catch {
+        return { formattedData: null, formattedRaw: null, reports: [] }
+      }
+    }
+    return { formattedData: null, formattedRaw: null, reports: [] }
+  })
   const [isReportOpen, setIsReportOpen] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
   const mountedRef = useRef(true)
+  const lastPromptRef = useRef<string | null>(null)
+  const navigate = useNavigate()
 
   const formatValue = (value: unknown): string => {
     if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
@@ -79,6 +93,34 @@ export default function Chat() {
     if (!plan) return null
     if (typeof plan === "string") {
       return <div className="whitespace-pre-wrap leading-relaxed">{plan}</div>
+    }
+    if (Array.isArray(plan)) {
+      return (
+        <div className="space-y-3">
+          <ol className="list-decimal list-inside space-y-1 text-sm">
+            {plan.map((item, idx) => {
+              if (item && typeof item === "object" && "strategy" in item) {
+                const entry = item as { strategy: string; description?: string }
+                return (
+                  <li key={idx} className="leading-relaxed">
+                    <div className="font-semibold">{entry.strategy}</div>
+                    {entry.description ? (
+                      <div className="text-muted-foreground text-xs whitespace-pre-wrap">
+                        {entry.description}
+                      </div>
+                    ) : null}
+                  </li>
+                )
+              }
+              return (
+                <li key={idx} className="whitespace-pre-wrap leading-relaxed">
+                  {formatValue(item)}
+                </li>
+              )
+            })}
+          </ol>
+        </div>
+      )
     }
     if (plan && typeof plan === "object") {
       const actionsRaw =
@@ -204,8 +246,20 @@ export default function Chat() {
 
         const panelData = buildReportPanelData(data.report ?? data.stock_report ?? data.analysis ?? data)
         if (panelData.formattedData || panelData.reports.length) {
-          setReportPanel(panelData)
-          setIsReportOpen(true)
+          window.localStorage.setItem(STORAGE_REPORT_KEY, JSON.stringify(panelData))
+          if (mountedRef.current) {
+            setReportPanel(panelData)
+            setIsReportOpen(window.location.pathname === "/chat")
+          }
+          if (window.location.pathname !== "/chat") {
+            toast.success("Analysis ready", {
+              description: "View the latest chat analysis.",
+              action: {
+                label: "Open chat",
+                onClick: () => navigate("/chat"),
+              },
+            })
+          }
         }
       } else {
         const persistedMessages = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "[]")
@@ -249,6 +303,18 @@ export default function Chat() {
   }, [messages])
 
   useEffect(() => {
+    const cachedReport = window.localStorage.getItem(STORAGE_REPORT_KEY)
+    if (cachedReport) {
+      try {
+        const parsed = JSON.parse(cachedReport)
+        setReportPanel(parsed)
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [])
+
+  useEffect(() => {
     return () => {
       mountedRef.current = false
     }
@@ -258,7 +324,8 @@ export default function Chat() {
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     const prompt = params.get("prompt")
-    if (prompt && prompt.trim()) {
+    if (prompt && prompt.trim() && prompt !== lastPromptRef.current) {
+      lastPromptRef.current = prompt
       setInput(prompt)
       // slight async to allow state to set before sending
       setTimeout(() => sendMessage(prompt), 0)

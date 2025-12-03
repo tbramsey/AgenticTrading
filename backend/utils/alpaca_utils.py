@@ -104,7 +104,22 @@ def place_market_order(symbol: str, amount: int, side: str):
 def create_portfolio(portfolio, initial_investment):
     data_client = StockHistoricalDataClient(API_KEY, API_SECRET)
 
-    for symbol, weight, _ in portfolio:
+    for row in portfolio:
+        # Rows may be tuples/lists of 2-4 elements or dicts. We only need symbol/weight.
+        symbol = None
+        weight = None
+
+        if isinstance(row, (list, tuple)) and len(row) >= 2:
+            symbol = row[0]
+            weight = row[1]
+        elif isinstance(row, dict):
+            symbol = row.get("symbol") or row.get("ticker")
+            weight = row.get("weight")
+
+        if not symbol or weight is None:
+            print(f"Skipping row with missing data: {row}")
+            continue
+
         req = StockLatestQuoteRequest(symbol_or_symbols=[symbol])
         quote = data_client.get_stock_latest_quote(req)
 
@@ -116,7 +131,13 @@ def create_portfolio(portfolio, initial_investment):
             print(f"Skipping {symbol} — invalid quote data.")
             continue
 
-        amount = (float(weight) / 100) * initial_investment
+        try:
+            weight_value = float(weight)
+        except Exception:
+            print(f"Skipping {symbol} — invalid weight: {weight}")
+            continue
+
+        amount = (weight_value / 100) * initial_investment
         qty = int(amount // current_price)
 
         if qty <= 0:
