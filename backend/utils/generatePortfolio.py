@@ -293,6 +293,10 @@ def make_portfolio(diversification, max_risk, sectors):
     #stock_df = pd.read_csv("backend/data/stock_data.csv")
 
     stock_df[["roiScore", "riskScore"]] = stock_df.apply(score_stock, axis=1)
+
+    if max_risk < 35:
+        max_risk = 35
+
     stock_df = stock_df[stock_df["riskScore"] < max_risk]
     stock_df = stock_df[stock_df["sector"].isin(sectors)]
     stock_df = stock_df.sort_values("roiScore", ascending=False)

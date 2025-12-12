@@ -70,6 +70,9 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
   const mountedRef = useRef(true)
   const lastPromptRef = useRef<string | null>(null)
+  const messagesSnapshotRef = useRef(JSON.stringify(messages))
+  const reportSnapshotRef = useRef(JSON.stringify(reportPanel))
+  const loadingSnapshotRef = useRef(isLoading)
   const navigate = useNavigate()
 
   const formatValue = (value: unknown): string => {
@@ -303,6 +306,18 @@ export default function Chat() {
   }, [messages])
 
   useEffect(() => {
+    messagesSnapshotRef.current = JSON.stringify(messages)
+  }, [messages])
+
+  useEffect(() => {
+    reportSnapshotRef.current = JSON.stringify(reportPanel)
+  }, [reportPanel])
+
+  useEffect(() => {
+    loadingSnapshotRef.current = isLoading
+  }, [isLoading])
+
+  useEffect(() => {
     const cachedReport = window.localStorage.getItem(STORAGE_REPORT_KEY)
     if (cachedReport) {
       try {
@@ -311,6 +326,52 @@ export default function Chat() {
       } catch {
         /* ignore */
       }
+    }
+  }, [])
+
+  useEffect(() => {
+    const syncFromStorage = () => {
+      const storedMessages = window.localStorage.getItem(STORAGE_KEY)
+      if (storedMessages && storedMessages !== messagesSnapshotRef.current) {
+        try {
+          const parsedMessages = JSON.parse(storedMessages)
+          setMessages(parsedMessages)
+        } catch {
+          /* ignore */
+        }
+      }
+
+      const storedReport = window.localStorage.getItem(STORAGE_REPORT_KEY)
+      if (storedReport && storedReport !== reportSnapshotRef.current) {
+        try {
+          const parsedReport = JSON.parse(storedReport)
+          setReportPanel(parsedReport)
+        } catch {
+          /* ignore */
+        }
+      }
+
+      const hasPending = Boolean(window.localStorage.getItem(STORAGE_PENDING_KEY))
+      if (hasPending !== loadingSnapshotRef.current) {
+        setIsLoading(hasPending)
+      }
+    }
+
+    const handleStorage = (event: StorageEvent) => {
+      if ([STORAGE_KEY, STORAGE_REPORT_KEY, STORAGE_PENDING_KEY].includes(event.key || "")) {
+        syncFromStorage()
+      }
+    }
+
+    const interval = window.setInterval(syncFromStorage, 1000)
+    window.addEventListener("storage", handleStorage)
+    window.addEventListener("focus", syncFromStorage)
+    syncFromStorage()
+
+    return () => {
+      window.clearInterval(interval)
+      window.removeEventListener("storage", handleStorage)
+      window.removeEventListener("focus", syncFromStorage)
     }
   }, [])
 

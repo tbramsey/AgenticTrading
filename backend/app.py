@@ -50,7 +50,8 @@ def analyze_stock():
 
         print(f"Analyzing {ticker}...")
         agent = TradingAgent()
-        report = agent.analyze_stock(ticker, datetime.now().strftime("%Y-%m-%d"))
+        curTime = datetime.now().strftime("%Y-%m-%d")
+        report = agent.analyze_stock(ticker, curTime)
         
         report_payload = {
             "ticker": report.ticker,

@@ -20,19 +20,19 @@ const ARTICLES: Article[] = [
     title: "Risk management fundamentals",
     summary: "Position sizing, stop-loss placement, and why risk per trade matters more than win rate.",
     body: `
-## Why risk > win rate
-Even profitable strategies can fail when risk per trade is uncontrolled. Risk defines your **survival**, win rate defines your **pace**.
+## Why it matters?
+Risk management is the cornerstone of successful trading and investing. It focuses on protecting your capital by controlling potential losses.
+## The key fundamentals covered are:
+- Position Sizing: This is determining how many shares or contracts to trade. It should be calculated based on your total account size and the maximum amount you are willing to lose on that specific trade (your risk per trade). Proper position sizing prevents a single losing trade from significantly damaging your portfolio.
+- Stop-Loss Placement: A stop-loss order is a critical tool that automatically closes a trade when the price hits a pre-determined level. Effective placement is based on market analysis (e.g., technical support/resistance levels) and determines the maximum dollar loss for that trade, not just a random percentage.
+- Risk Per Trade Matters More Than Win Rate:** This is the most crucial concept.
+Risk Per Trade (RPT) is the small, fixed percentage of your total capital you are willing to lose on any single trade (often 1% to 2%).
 
-## Quick checklist
-- Fixed % risk per trade (e.g., 0.5–1.0%)
-- Position size from stop distance, not conviction
-- Respect daily loss limits and cool-off periods
-- Pre-plan exits: stop, target, and time-based
+Win Rate is the percentage of your trades that are profitable.
 
-## Playbook
-1) Decide max % capital at risk per trade.
-2) Use recent volatility to set stops; size from that distance.
-3) If three losses hit in a session, stand down and review.
+A trader can have a low win rate (e.g., 40%) but be highly profitable if their average winning trade is significantly larger than their average losing trade (a concept called Risk/Reward Ratio). By controlling your RPT, you ensure that losing trades are small and manageable, making long-term profitability achievable even without a high win rate.
+
+In short, risk management is about controlling the size of your losses so that your wins, even if fewer in number, can generate positive returns over time.
 `,
     tags: ["risk", "discipline"],
     updated: "Updated today",

@@ -38,7 +38,7 @@ export default function TopBar() {
 
       {/* User */}
       <div className="flex items-center gap-3">
-        <span className="font-medium text-foreground">Jack Sparrow</span>
+        <span className="font-medium text-foreground">Artin Seyrafi</span>
 
         <Avatar className="bg-primary text-primary-foreground">
           <AvatarFallback>A</AvatarFallback>

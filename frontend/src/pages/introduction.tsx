@@ -13,19 +13,19 @@ const features = [
   {
     title: "AI-Driven Logic",
     description:
-      "Neural agents adapt to volatility in milliseconds, executing strategies before humans react.",
+      "Neural agents adapt to volatility in seconds, executing strategies before humans react.",
     icon: Cpu,
   },
   {
     title: "Predictive Modeling",
     description:
-      "Signals anticipate reversals with historical sentiment and multi-horizon forecasting.",
+      "Signals anticipate trends with historical sentiment and multi-horizon forecasting.",
     icon: TrendingUp,
   },
   {
     title: "Risk Guardrails",
     description:
-      "Hard-coded exposure limits, stop-loss enforcement, and capital constraints keep autonomy safe.",
+      "Reliable choosen vendors and transparent decision making.",
     icon: Shield,
   },
 ];

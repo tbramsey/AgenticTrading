@@ -1,14 +1,14 @@
+import { FormEvent } from "react"
+import { useNavigate } from "react-router-dom"
 import {
   Field,
   FieldDescription,
   FieldGroup,
   FieldLabel,
-  FieldSet,
 } from "@/components/ui/field"
 
-import { Input } from "@/components/ui/input"  
+import { Input } from "@/components/ui/input"
 
-import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -19,7 +19,14 @@ import {
 } from "@/components/ui/card"
 
 export default function LoginScreen() {
-    return (
+  const navigate = useNavigate()
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    navigate("/dashboard")
+  }
+
+  return (
     <div className="w-full max-w-md p-1 bg-gray-50 rounded-lg shadow-lg">
       <Card>
         <CardHeader>
@@ -29,16 +36,11 @@ export default function LoginScreen() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form>
+          <form onSubmit={handleSubmit} noValidate>
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  required
-                />
+                <Input id="email" type="email" placeholder="m@example.com" />
               </Field>
               <Field>
                 <div className="flex items-center">
@@ -50,10 +52,10 @@ export default function LoginScreen() {
                     Forgot your password?
                   </a>
                 </div>
-                <Input id="password" type="password" required />
+                <Input id="password" type="password" />
               </Field>
               <Field>
-                <Button onClick={() => window.location.href = '/dashboard'}>Login</Button>
+                <Button type="submit">Login</Button>
                 <Button variant="outline" type="button">
                   Login with Google
                 </Button>
@@ -65,6 +67,6 @@ export default function LoginScreen() {
           </form>
         </CardContent>
       </Card>
-    </div>);
+    </div>
+  )
 }
-

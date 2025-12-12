@@ -1,6 +1,7 @@
 import { Book, Home, Inbox, Moon, Search, Settings, Sun, MessageSquareText, ChartCandlestick } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
+import BerryLogo from "@/assets/Berry_Logo.png"
 
 import {
   Sidebar,
@@ -70,7 +71,7 @@ export function AppSidebar() {
               <SidebarMenuItem key="logo">
                 <SidebarMenuButton asChild>
                   <Link to="/dashboard">
-                    <img src="/vite.svg" className="w-7 h-7" />
+                    <img src={BerryLogo} className="w-7 h-7" />
                     <span>Barry</span>
                   </Link>
                 </SidebarMenuButton>
